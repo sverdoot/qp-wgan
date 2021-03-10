@@ -30,13 +30,14 @@ def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument('--task', type=str, choices=['mnist', 'cifar10', 'gmm', 'discrete'], default='mnist')
     parser.add_argument('--n_epoch', type=int, default=30)
-    parser.add_argument('-q', type=int, default=2)
-    parser.add_argument('-p', default=2)
+    parser.add_argument('-q', '--q', type=int, default=2)
+    parser.add_argument('-p', '--p', default=2)
     parser.add_argument('--n_critic_iter', type=int, default=5)
-    parser.add_argument('--batch_size', type=int, default=64)
-    parser.add_argument('--device', type=int, default=None)
+    parser.add_argument('-b', '--batch_size', type=int, default=64)
+    parser.add_argument('-d', '--device', type=int, default=None)
     parser.add_argument('--seed', type=int, default=None)
-    #parser.add_argument('')
+    parser.add_argument('--reg_coef1', type=float, default=0.1)
+    parser.add_argument('--reg_coef2', type=float, default=0.1)
 
     args = parser.parse_args()
     return args
@@ -53,7 +54,6 @@ def main(args):
 
     if args.task == 'mnist':
         train_dataset = datasets.MNIST('data', train=True, download=True)#, transform=T.Compose([T.ToTensor(), T.Lambda(lambda x: torch.flatten(x))]))
-        #print(train_dataset.data)
         trainloader = DataLoader(train_dataset.data.reshape(-1, 28*28))
         generator = mnist.Generator().to(device)
         critic = mnist.Critic().to(device)

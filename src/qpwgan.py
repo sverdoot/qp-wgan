@@ -18,6 +18,8 @@ class QPWGAN():
         self.p = kwargs.get('p')
         self.verbose = kwargs.get('verbose', True)
         self.device = kwargs.get('device', 'cpu')
+        self.reg_coef1 = kwargs.get('reg_coef1', 0.1)
+        self.reg_coef2 = kwargs.get('reg_coef2', 0.1)
         
     def critic_iteration(self, data_batch, gen_batch):
         assert data_batch.shape[0] == gen_batch.shape[0]
