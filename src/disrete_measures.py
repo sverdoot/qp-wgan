@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 import argparse
 from pathlib import Path
 
-
+colors = ['b', 'g', 'r']
 class Generator2d(nn.Module):
     def __init__(self, n_atoms):
         super().__init__()
@@ -24,7 +24,7 @@ def compute_wasserstein(target_sample, gen_sample, q, p):
     T = torch.FloatTensor(T)
     T.requires_grad_(False)
     W = ((M * T).sum())**(1./p)
-    return W
+    return W, T
 
 
 def parse_arguments():
@@ -32,7 +32,7 @@ def parse_arguments():
     parser.add_argument('--target_atoms', type=int, default=10)
     parser.add_argument('--gen_atoms', type=int, default=7)
     parser.add_argument('-q', type=int, default=2)
-    parser.add_argument('-p', type=int, default=1)
+    parser.add_argument('-p', nargs='+', type=int, default=1)
     parser.add_argument('--n_iter', type=int, default=100)
     parser.add_argument('--save_dir', type=str, default='figs')
 
@@ -41,32 +41,58 @@ def parse_arguments():
 
 
 def main(args):
-    target_sample = torch.rand(args.target_atoms, 2) - .5
+    fig, ax = plt.subplots()
+    ax2 = ax.twinx()
+    for i, p in enumerate(args.p):
+
+        target_sample = torch.rand(args.target_atoms, 2) - .5
+        
+        generator = Generator2d(args.gen_atoms)
+        optimizer = torch.optim.SGD(generator.parameters(), lr=0.1)
+
+        samples = []
+        wass = []
+        grad_norms = []
+        for it in range(args.n_iter):
+            gen_sample = generator()
+            #print(generator.theta, gen_sample)
+            samples.append(np.array(gen_sample.detach().cpu().numpy()))
+            W, T = compute_wasserstein(target_sample, gen_sample, args.q, p)
+            optimizer.zero_grad()
+            W.backward()
+            optimizer.step()
+
+            wass.append(W.item())
+            #print(generator.theta.grad)
+            grad_norms.append(torch.norm(generator.theta.grad, p=2).item())
+        samples = np.stack(samples, 0)
+        #print(len(wass))
+
+        #gen_sample = generator().detach().cpu().numpy()
+        target_sample = target_sample.detach().cpu().numpy()
+        fig = plt.figure()
+        for sample in samples[:-1]:
+            plt.scatter(sample[:, 0], sample[:, 1], color='r', s=0.2)
+        plt.scatter(target_sample[:, 0], target_sample[:, 1], color='b', s=100)
+        plt.scatter(samples[-1, :, 0], samples[-1, :, 1], color='r')
+        plt.title(f'p={p}')
+        plt.plot([0], [0], marker='x', markersize=10, color='black')
+        plt.savefig(Path(args.save_dir, f'discrete_p={p}.png'))
+        plt.close()
+
+        #color = 
+        ax.plot(np.arange(args.n_iter), wass, label=f'p={p}', color=colors[i])
+        ax2.plot(np.arange(args.n_iter), grad_norms, linestyle='--', color=colors[i])
+        ax.grid()
+    ax.set_xlabel('Iterations')
+    ax.set_ylabel(r'$W_p(g_{\theta}, \mu)$')
     
-    generator = Generator2d(args.gen_atoms)
-    optimizer = torch.optim.SGD(generator.parameters(), lr=0.1)
+    ax2.yaxis.set_label_position("right")
+    ax2.set_ylabel(r'$\|\nabla_{\theta} W_p(g_{\theta}, \mu)\|_2$')
 
-    samples = []
-    for it in range(args.n_iter):
-        gen_sample = generator()
-        #print(generator.theta, gen_sample)
-        samples.append(np.array(gen_sample.detach().cpu().numpy()))
-        W = compute_wasserstein(target_sample, gen_sample, args.q, args.p)
-        optimizer.zero_grad()
-        W.backward()
-        optimizer.step()
-    samples = np.stack(samples, 0)
-
-    #gen_sample = generator().detach().cpu().numpy()
-    target_sample = target_sample.detach().cpu().numpy()
-    fig = plt.figure()
-    for sample in samples[:-1]:
-        plt.scatter(sample[:, 0], sample[:, 1], color='r', s=0.2)
-    plt.scatter(target_sample[:, 0], target_sample[:, 1], color='b', s=100)
-    plt.scatter(samples[-1, :, 0], samples[-1, :, 1], color='r')
-    plt.title(f'p={args.p}')
-    plt.plot([0], [0], marker='x', markersize=10, color='black')
-    plt.savefig(Path(args.save_dir, f'discrete_p={args.p}.png'))
+    ax.legend()
+    #ax2.legend()
+    plt.savefig(Path(args.save_dir, f'discrete_p={args.p}_evol.png'))
     plt.close()
 
 
