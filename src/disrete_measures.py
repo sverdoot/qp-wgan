@@ -7,6 +7,8 @@ import argparse
 from pathlib import Path
 
 colors = ['b', 'g', 'r']
+
+
 class Generator2d(nn.Module):
     def __init__(self, n_atoms):
         super().__init__()
@@ -19,11 +21,12 @@ class Generator2d(nn.Module):
 def compute_wasserstein(target_sample, gen_sample, q, p):
     target_weights = np.ones(target_sample.shape[0]) / target_sample.shape[0]
     gen_weights = np.ones(gen_sample.shape[0]) / gen_sample.shape[0]
-    M = torch.norm(target_sample[:, None, :] - gen_sample[None, :, :], dim=2, p=q)**p / p
+    M = torch.norm(target_sample[:, None, :] -
+                   gen_sample[None, :, :], dim=2, p=q)**p / p
     T = ot.emd(target_weights, gen_weights, M.detach().cpu().numpy())
     T = torch.FloatTensor(T)
     T.requires_grad_(False)
-    W = ((M * T).sum())**(1./p)
+    W = ((M * T).sum())**(1. / p)
     return W, T
 
 
@@ -36,7 +39,7 @@ def parse_arguments():
     parser.add_argument('--n_iter', type=int, default=100)
     parser.add_argument('--save_dir', type=str, default='figs')
 
-    args= parser.parse_args()
+    args = parser.parse_args()
     return args
 
 
@@ -46,7 +49,7 @@ def main(args):
     for i, p in enumerate(args.p):
 
         target_sample = torch.rand(args.target_atoms, 2) - .5
-        
+
         generator = Generator2d(args.gen_atoms)
         optimizer = torch.optim.SGD(generator.parameters(), lr=0.1)
 
@@ -63,10 +66,10 @@ def main(args):
             optimizer.step()
 
             wass.append(W.item())
-            #print(generator.theta.grad)
+            # print(generator.theta.grad)
             grad_norms.append(torch.norm(generator.theta.grad, p=2).item())
         samples = np.stack(samples, 0)
-        #print(len(wass))
+        # print(len(wass))
 
         #gen_sample = generator().detach().cpu().numpy()
         target_sample = target_sample.detach().cpu().numpy()
@@ -80,18 +83,23 @@ def main(args):
         plt.savefig(Path(args.save_dir, f'discrete_p={p}.png'))
         plt.close()
 
-        #color = 
+        # color =
         ax.plot(np.arange(args.n_iter), wass, label=f'p={p}', color=colors[i])
-        ax2.plot(np.arange(args.n_iter), grad_norms, linestyle='--', color=colors[i])
+        ax2.plot(
+            np.arange(
+                args.n_iter),
+            grad_norms,
+            linestyle='--',
+            color=colors[i])
         ax.grid()
     ax.set_xlabel('Iterations')
     ax.set_ylabel(r'$W_p(g_{\theta}, \mu)$')
-    
+
     ax2.yaxis.set_label_position("right")
     ax2.set_ylabel(r'$\|\nabla_{\theta} W_p(g_{\theta}, \mu)\|_2$')
 
     ax.legend()
-    #ax2.legend()
+    # ax2.legend()
     plt.savefig(Path(args.save_dir, f'discrete_p={args.p}_evol.png'))
     plt.close()
 
@@ -99,5 +107,3 @@ def main(args):
 if __name__ == '__main__':
     args = parse_arguments()
     main(args)
-
-    

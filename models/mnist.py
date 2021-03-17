@@ -14,7 +14,7 @@ class Generator(nn.Module):
             nn.LeakyReLU(.2),
             nn.Linear(512, 1024),
             nn.Tanh(),
-            nn.Linear(1024, 28*28),
+            nn.Linear(1024, 28 * 28),
             nn.LeakyReLU(.2),
         )
 
@@ -32,7 +32,7 @@ class Critic(nn.Module):
     def __init__(self):
         super().__init__()
         self.net = nn.Sequential(
-            nn.Linear(28*28, 1024),
+            nn.Linear(28 * 28, 1024),
             nn.LeakyReLU(.2),
             nn.Dropout(.3),
             nn.Linear(1024, 512),
@@ -45,5 +45,5 @@ class Critic(nn.Module):
         )
 
     def forward(self, x):
-        out = self.net(x).squeeze(1)#.reshape(-1)
+        out = self.net(x).squeeze(1)  # .reshape(-1)
         return out
