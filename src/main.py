@@ -47,8 +47,6 @@ def parse_arguments():
     parser.add_argument('--reg_coef1', type=float, default=0.1)
     parser.add_argument('--reg_coef2', type=float, default=0.1)
     parser.add_argument('--search_space', type=str, choices=['full', 'x'], default='x')
-    parser.add_argument('--reg_coef1', type=float, default=1.)
-    parser.add_argument('--reg_coef2', type=float, default=1.)
 
     args = parser.parse_args()
     return args
