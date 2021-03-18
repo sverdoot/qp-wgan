@@ -46,6 +46,9 @@ def parse_arguments():
     parser.add_argument('--seed', type=int, default=None)
     parser.add_argument('--reg_coef1', type=float, default=0.1)
     parser.add_argument('--reg_coef2', type=float, default=0.1)
+    parser.add_argument('--search_space', type=str, choices=['full', 'x'], default='x')
+    parser.add_argument('--reg_coef1', type=float, default=1.)
+    parser.add_argument('--reg_coef2', type=float, default=1.)
 
     args = parser.parse_args()
     return args
@@ -80,7 +83,10 @@ def main(args):
                   p=args.p,
                   n_epoch=args.n_epoch,
                   n_critic_iter=args.n_critic_iter,
-                  verbose=True
+                  search_space=args.search_space,
+                  verbose=True,
+                  reg_coef1=args.reg_coef1,
+                  reg_coef2=args.reg_coef2,
                   )
 
     wgan.train()

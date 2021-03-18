@@ -12,5 +12,6 @@ python src/main.py
 Approximating a Gaussian mixture distribution
 
 ```bash
-python src/gaussian_mixture.py --save_dir results/ --n_iter 1000
+mkdir -p ../test
+python src/gaussian_mixture.py --n_iter 601 --search_space full
 ```

@@ -10,7 +10,7 @@ colors = ['b', 'g', 'r']
 
 
 class Generator2d(nn.Module):
-    def __init__(self, n_atoms):
+    def __init__(self, n_atoms: int):
         super().__init__()
         self.theta = nn.Parameter(torch.zeros(n_atoms, 2))
 
@@ -18,7 +18,7 @@ class Generator2d(nn.Module):
         return self.theta
 
 
-def compute_wasserstein(target_sample, gen_sample, q, p):
+def compute_wasserstein(target_sample: torch.Tensor, gen_sample: torch.Tensor, q, p):
     target_weights = np.ones(target_sample.shape[0]) / target_sample.shape[0]
     gen_weights = np.ones(gen_sample.shape[0]) / gen_sample.shape[0]
     M = torch.norm(target_sample[:, None, :] -
@@ -80,7 +80,7 @@ def main(args):
         plt.scatter(samples[-1, :, 0], samples[-1, :, 1], color='r')
         plt.title(f'p={p}')
         plt.plot([0], [0], marker='x', markersize=10, color='black')
-        plt.savefig(Path(args.save_dir, f'discrete_p={p}.png'))
+        plt.savefig(Path(args.save_dir, f'discrete_p={p}.pdf'))
         plt.close()
 
         # color =
@@ -100,7 +100,7 @@ def main(args):
 
     ax.legend()
     # ax2.legend()
-    plt.savefig(Path(args.save_dir, f'discrete_p={args.p}_evol.png'))
+    plt.savefig(Path(args.save_dir, f'discrete_p={args.p}_evol.pdf'))
     plt.close()
 
 

@@ -4,6 +4,10 @@ from torch.nn import functional as F
 from matplotlib import pyplot as plt
 import numpy as np
 from pathlib import Path
+from scipy import stats
+
+#from src.discrete_measures import compute_wasserstein
+from discrete_measures import compute_wasserstein
 
 torch.autograd.set_detect_anomaly(True)
 
@@ -22,32 +26,42 @@ class QPWGAN():
         self.p = kwargs.get('p', 1)
         self.verbose = kwargs.get('verbose', True)
         self.device = kwargs.get('device', 'cpu')
-        self.reg_coef1 = kwargs.get('reg_coef1', 0.1)
-        self.reg_coef2 = kwargs.get('reg_coef2', 0.1)
+        self.reg_coef1 = kwargs.get('reg_coef1', 1)
+        self.reg_coef2 = kwargs.get('reg_coef2', 1)
+        self.search_space = kwargs.get('search_space', 'x')
+
+        assert self.search_space == 'x' or self.search_space == 'full'
 
     def critic_iteration(self, data_batch, gen_batch):
         assert data_batch.shape[0] == gen_batch.shape[0]
         batch_size = data_batch.shape[0]
-        #print(data_batch.shape, gen_batch.shape)
-        batch = torch.cat([data_batch, gen_batch], dim=0)
+        if self.search_space == 'full':
+            batch = torch.cat([data_batch, gen_batch.detach()], dim=0)
+            gen_batch_ = torch.cat([data_batch, gen_batch], dim=0)
+        elif self.search_space == 'x':
+            batch = data_batch
+            gen_batch_ = gen_batch
+        # full_cost = torch.norm(
+        #     batch[:, None, :] - batch[None, ...], p=self.q, dim=-1)**self.p / self.p
         full_cost = torch.norm(
-            batch[:, None, :] - batch[None, ...], p=self.q, dim=-1)**self.p / self.p
+            batch[:, None, :] - gen_batch_[None, ...], p=self.q, dim=-1)**self.p / self.p
         #cost = torch.norm(data_batch[:, None, :] - gen_batch[None, ...], p=self.q, dim=-1)**self.p / self.p
         critic_vals = self.critic(batch)
         c_transform_vals = self.get_c_transform(full_cost, critic_vals)
         full_xi_vals = full_cost - \
             critic_vals[:, None] - c_transform_vals[None, :]
-        xy_xi_vals = full_cost[:batch_size, batch_size:] - \
-            critic_vals[:batch_size] - c_transform_vals[batch_size:]
-
-        penalty1 = self.xy_penalty(xy_xi_vals)
+        
         penalty2 = self.admissable_penalty(full_xi_vals)
-
+        if self.search_space == 'full':
+            xy_xi_vals = full_cost[:batch_size, batch_size:] - \
+            critic_vals[:batch_size] - c_transform_vals[batch_size:]
+            c_transform_y = c_transform_vals[batch_size:].mean()
+        elif self.search_space == 'x':
+            xy_xi_vals = full_cost[:batch_size, :] - \
+            critic_vals[:batch_size] - c_transform_vals
+            c_transform_y = c_transform_vals.mean()
+        penalty1 = self.xy_penalty(xy_xi_vals)
         critic_x = critic_vals[:batch_size].mean()
-        c_transform_y = c_transform_vals[batch_size:].mean()
-
-#         self.reg_coef1 = 1 / (1 * c_transform_vals[batch_size:].shape[0] ) ** 2
-#         self.reg_coef2 = 1 / (2 * c_transform_vals[batch_size:].shape[0] ) ** 2
 
         loss = - critic_x - c_transform_y + penalty1 * \
             self.reg_coef1 + penalty2 * self.reg_coef2
@@ -57,7 +71,7 @@ class QPWGAN():
 
         return loss.item(), critic_x, c_transform_y
 
-    def iteration(self, data_batch):
+    def iteration(self, data_batch, return_sample=False):
         batch_size = data_batch.shape[0]
         gen_batch = self.generator.sample(batch_size, self.device)
 
@@ -71,18 +85,30 @@ class QPWGAN():
         for p in self.critic.parameters():
             p.requires_grad = False
 
-        batch = torch.cat([data_batch, gen_batch], dim=0)
+        if self.search_space == 'full':
+            batch = torch.cat([data_batch, gen_batch.detach()], dim=0)
+            gen_batch_ = torch.cat([data_batch, gen_batch], dim=0)
+        elif self.search_space == 'x':
+            batch = data_batch
+            gen_batch_ = gen_batch
         full_cost = torch.norm(
-            batch[:, None, :] - batch[None, ...], p=self.q, dim=-1)**self.p / self.p
+            batch[:, None, :] - gen_batch_[None, ...], p=self.q, dim=-1)**self.p / self.p
         critic_vals = self.critic(batch)
         c_transform_vals = self.get_c_transform(full_cost, critic_vals)
+
         critic_x = critic_vals[:batch_size].mean()
-        c_transform_y = c_transform_vals[batch_size:].mean()
+        if self.search_space == 'full':
+            c_transform_y = c_transform_vals[batch_size:].mean()
+        elif self.search_space == 'x':
+            c_transform_y = c_transform_vals.mean()
 
         gen_loss = critic_x + c_transform_y
         self.gen_optimizer.zero_grad()
         gen_loss.backward()
         self.gen_optimizer.step()
+
+        if return_sample:
+            return critic_loss, gen_loss.item(), gen_batch.detach() 
 
         return critic_loss, gen_loss.item()
 
@@ -105,10 +131,16 @@ class QPWGAN():
         target_sample = target_sample.to(self.device)
         gen_loss_history = []
         critic_loss_history = []
+        wass_history = []
+        print('Generator:', self.generator)
+        print('Critic:', self.critic)
         for iter_ in range(n_iter):
-            critic_loss, gen_loss = self.iteration(target_sample)
+            critic_loss, gen_loss, gen_batch = self.iteration(target_sample, return_sample=True)
             gen_loss_history.append(gen_loss)
             critic_loss_history.append(critic_loss)
+            # TODO: bootstrapping (or smth) for wasserstein metric estimation
+            W, _ = compute_wasserstein(target_sample, gen_batch, q=self.q, p=self.p)
+            wass_history.append(W.item()**self.p)
             if iter_ % 10 == 0 and iter_ > 0:
                 if self.verbose:
                     print(
@@ -116,8 +148,25 @@ class QPWGAN():
             if iter_ % 100 == 0 and iter_ > 0:
                 fig = plt.figure()
                 sample = self.generator.sample(
-                    batch_size=100).to('cpu').detach().numpy()
-                plt.scatter(sample[:, 0], sample[:, 1],
+                    batch_size=100, device=self.device).to('cpu').detach().numpy()
+                kernel = stats.gaussian_kde(np.unique(sample, axis=0).T) #reshape(2, -1))
+
+                delta = 0.02
+                x = np.arange(-1.2, 1.2, delta)
+                y = np.arange(-1.2, 1.2, delta)
+                X, Y = np.meshgrid(x, y)
+                input = np.zeros((
+                    X.shape[0] *
+                    X.shape[1],
+                    2))
+                input[:, 0] = X.reshape(-1)
+                input[:, 1] = Y.reshape(-1)
+
+                values = kernel.pdf(input.T).T
+                CS = plt.contour(X, Y, values.reshape(
+                    X.shape), 10) #levels=np.linspace(0, 1, 10))
+
+                plt.scatter(sample[:100, 0], sample[:100, 1],
                             color='red', s=10, label='generated')
                 target_sample = target_sample.detach().cpu().numpy()
                 plt.scatter(target_sample[:,
@@ -134,10 +183,9 @@ class QPWGAN():
                 plt.savefig(
                     Path(
                         '../test',
-                        f'iteration_{iter_}_sampled_gaussian_p={self.p}.png'))
+                        f'iteration_{iter_}_sampled_gaussian_p={self.p}.pdf'))
                 plt.close()
 
-            if iter_ % 100 == 0 and iter_ > 0:
                 fig = plt.figure()
                 target_sample = target_sample.detach().cpu().numpy()
                 plt.scatter(target_sample[:,
@@ -149,34 +197,30 @@ class QPWGAN():
                             label='original data')
                 target_sample = torch.Tensor(target_sample).to(self.device)
 
-                delta = 0.02
-                x = np.arange(-1.0, 1.0, delta)
-                y = np.arange(-1.0, 1.0, delta)
-                X, Y = np.meshgrid(x, y)
-                z = np.zeros((X.shape[0] * X.shape[1], 2))
-                for i in range(X.shape[0]):
-                    for j in range(X.shape[1]):
-                        z[i * X.shape[0] + j] = np.append(X[i][j], Y[i][j])
+                
+                # z = np.zeros((X.shape[0] * X.shape[1], 2))
+                # for i in range(X.shape[0]):
+                #     for j in range(X.shape[1]):
+                #         z[i * X.shape[0] + j] = np.append(X[i][j], Y[i][j])
 
-                input = torch.Tensor(
-                    X.shape[0] *
-                    X.shape[1],
-                    2).to(
-                    self.device)
+                input = torch.FloatTensor(input).to(self.device)
                 output_real = self.critic(input).detach().cpu().numpy()
                 output_real[np.isnan(output_real)] = 0
 
 #                 CS = plt.pcolormesh(X, Y, output_real.reshape(X.shape), cmap=plt.cm.rainbow)
                 CS = plt.contour(X, Y, output_real.reshape(
-                    X.shape), levels=np.linspace(-1, 1, 10))
-                CB = plt.colorbar(CS, shrink=0.9, extend='both')
+                    X.shape), levels=np.linspace(output_real.mean(), output_real.max(), 10))
+
+                CB = plt.colorbar(CS, shrink=0.9)#, extend='both')
                 plt.title(f'Critic values p={self.p} iteration {iter_}')
                 plt.legend()
                 plt.savefig(
                     Path(
                         '../test',
-                        f'iteration_{iter_}_critic_p={self.p}.png'))
+                        f'iteration_{iter_}_critic_p={self.p}.pdf'))
                 plt.close()
+        
+        return gen_loss_history, wass_history
 
     @staticmethod
     def get_c_transform(cost, critic_vals):

@@ -1,0 +1,1 @@
+# TODO: Inception score, Fresche score for Cifar10, distance to nearest for MNIST

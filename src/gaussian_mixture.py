@@ -7,10 +7,11 @@ import argparse
 from pathlib import Path
 from typing import List, Union
 
-from gaussian_model import Generator, Critic
+from models.gaussian_model import Generator, Critic
 from qpwgan import QPWGAN
 from main import optim_params, random_seed
 
+# optim_params = {'lr': 1e-4, 'betas': (0.5, 0.999)}
 
 def generate_2d_gmm(n_data: Union[int, List[int]],
                     mu_vector: np.array, variance_vector: np.array) -> np.array:
@@ -46,6 +47,9 @@ def parse_arguments():
             30,
             50])
     parser.add_argument('--save_dir', type=str, default='figs')
+    parser.add_argument('--search_space', type=str, choices=['full', 'x'], default='x')
+    parser.add_argument('--reg_coef1', type=float, default=1.)
+    parser.add_argument('--reg_coef2', type=float, default=1.)
     args = parser.parse_args()
     return args
 
@@ -71,16 +75,17 @@ def main(args):
                                     variance_vector=variances
                                     )
 
-    fig, ax = plt.subplots()
-    ax2 = ax.twinx()
+    # fig, ax = plt.subplots()
+    # ax2 = ax.twinx()
 
     for i, p in enumerate(args.p):
         print("=" * 50)
         print(f"q {args.q} - p {p} metric")
 
         generator = Generator().to(device)
+        #generator.init_weights()
         critic = Critic().to(device)
-#         gen_optimizer = torch.optim.Adam(generator.parameters(), **optim_params)
+        #critic.init_weights()
         gen_optimizer = torch.optim.Adam(
             generator.parameters(), **optim_params)
         critic_optimizer = torch.optim.Adam(
@@ -94,11 +99,14 @@ def main(args):
                       p=p,
                       device=device,
                       verbose=True,
-                      n_critic_iter=args.n_critic_iter
+                      n_critic_iter=args.n_critic_iter,
+                      search_space=args.search_space,
+                      reg_coef1=args.reg_coef1,
+                      reg_coef2=args.reg_coef2,
                       )
-        wgan.train_gaussian_mixture(torch.Tensor(target_sample), args.n_iter)
+        gen_loss_history, wass_history = wgan.train_gaussian_mixture(torch.Tensor(target_sample), args.n_iter)
         sample = wgan.generator.sample(
-            batch_size=100).to('cpu').detach().numpy()
+            batch_size=100, device=device).to('cpu').detach().numpy()
 
         fig = plt.figure()
         plt.scatter(sample[:, 0], sample[:, 1],
@@ -108,22 +116,31 @@ def main(args):
         plt.title(f'p={p}')
         plt.plot([0], [0], marker='x', markersize=10, color='black')
         plt.legend()
-        plt.savefig(Path(args.save_dir, f'sampled_gaussian_p={p}.png'))
+        plt.savefig(Path(args.save_dir, f'sampled_gaussian_p={p}.pdf'))
+        plt.close()
+
+        plt.figure()
+        plt.plot(np.arange(len(gen_loss_history)), gen_loss_history, c='b')
+        plt.plot(np.arange(len(wass_history)), wass_history, c='r')
+        plt.title(f'{p}-WGAN')
+        plt.xlabel(r'$N_{epoch}$')
+        plt.grid()
+        plt.savefig(Path(args.save_dir, f'gaussian_loss_p={p}.pdf'))
         plt.close()
 
 #         ax.plot(np.arange(args.n_iter), wass, label=f'p={p}', color=colors[i])
 #         ax2.plot(np.arange(args.n_iter), grad_norms, linestyle='--', color=colors[i])
-        ax.grid()
-    ax.set_xlabel('Iterations')
-    ax.set_ylabel(r'p-Wasserstein distance')
+    #     ax.grid()
+    # ax.set_xlabel('Iterations')
+    # ax.set_ylabel(r'p-Wasserstein distance')
 
 #     ax2.yaxis.set_label_position("right")
 #     ax2.set_ylabel(r'$\|\nabla_{\theta} W_p(g_{\theta}, \mu)\|_2$')
 
 #     ax.legend()
     # ax2.legend()
-    plt.savefig(Path(args.save_dir, f'sampled_gaussian_p={args.p}.png'))
-    plt.close()
+    # plt.savefig(Path(args.save_dir, f'sampled_gaussian_p={args.p}.png'))
+    # plt.close()
 
 
 if __name__ == '__main__':
