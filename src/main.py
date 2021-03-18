@@ -7,6 +7,7 @@ from torchvision import datasets
 from pathlib import Path
 from torch.utils.data import DataLoader
 from torchvision import transforms as T
+from matplotlib import pyplot as plt
 
 from models import mnist
 from qpwgan import QPWGAN
@@ -63,11 +64,36 @@ def main(args):
         random_seed(args.seed)
 
     if args.task == 'mnist':
-        # , transform=T.Compose([T.ToTensor(), T.Lambda(lambda x: torch.flatten(x))]))
-        train_dataset = datasets.MNIST('data', train=True, download=True)
-        trainloader = DataLoader(train_dataset.data.reshape(-1, 28 * 28))
+        transform = T.Compose([T.ToTensor(), T.Normalize((0.1307,), (0.3081,)), T.Lambda(lambda x: torch.flatten(x))])
+        inv_normalize = T.Normalize(
+            mean=[-0.1307/0.3081,],
+            std=[1/0.3081,]
+        )
+
+        train_dataset = datasets.MNIST('data', train=True, download=True, transform=transform)
+        trainloader = DataLoader(train_dataset, batch_size=args.batch_size)
         generator = mnist.Generator().to(device)
+        generator.init_weights()
         critic = mnist.Critic().to(device)
+        critic.init_weights()
+
+        def callback(wgan, epoch, *args, **kwargs):
+            if epoch % 1 != 0:
+                return
+            sample = wgan.generator.sample(100, device=wgan.device)
+            sample = sample.reshape(-1, 28, 28)
+            sample = inv_normalize(sample).detach().cpu().numpy()
+            fig, axs = plt.subplots(nrows=10, ncols=10, figsize=(15, 15))
+            #plt.title(f'({wgan.q}, {wgan.p})-WGAN')
+            for ax, im in zip(axs.flat, sample):
+                ax.imshow(im)
+                ax.set_aspect('equal')
+                ax.axis('off')
+            plt.savefig(Path('../test', f'{wgan.q}_{wgan.p}_mnist_{epoch}epoch.pdf'))
+            plt.close()
+
+        callbacks = callback
+
 
     gen_optimizer = optim.Adam(generator.parameters(), **optim_params)
     critic_optimizer = optim.Adam(critic.parameters(), **optim_params)
@@ -87,7 +113,7 @@ def main(args):
                   reg_coef2=args.reg_coef2,
                   )
 
-    wgan.train()
+    wgan.train(callbacks=callbacks)
 
 
 if __name__ == '__main__':

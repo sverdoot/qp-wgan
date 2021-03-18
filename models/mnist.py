@@ -18,12 +18,18 @@ class Generator(nn.Module):
             nn.LeakyReLU(.2),
         )
 
+    def init_weights(self):
+        for m in self.net:
+            if type(m) == nn.Linear:
+                m.weight.data.normal_(0.0, 0.1)
+                m.bias.data.fill_(0)
+
     def forward(self, z):
         x = self.net(z)
         return x
 
-    def sample(self, batch_size):
-        z = torch.randn(batch_size, self.latent_dim)
+    def sample(self, batch_size, device=torch.device('cuda')):
+        z = torch.randn(batch_size, self.latent_dim).to(device)
         x = self.forward(z)
         return x
 
@@ -44,6 +50,13 @@ class Critic(nn.Module):
             nn.Linear(256, 1)
         )
 
+    def init_weights(self):
+        for m in self.net:
+            if type(m) == nn.Linear:
+                m.weight.data.normal_(0.0, 0.1)
+                m.bias.data.fill_(0)
+
     def forward(self, x):
+        #print(x)
         out = self.net(x).squeeze(1)  # .reshape(-1)
         return out

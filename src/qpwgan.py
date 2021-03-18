@@ -5,6 +5,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 from pathlib import Path
 from scipy import stats
+from typing import List, Tuple
 
 #from src.discrete_measures import compute_wasserstein
 from discrete_measures import compute_wasserstein
@@ -112,20 +113,35 @@ class QPWGAN():
 
         return critic_loss, gen_loss.item()
 
-    def train(self, n_epoch=None):
+    def train(self, n_epoch: int=None, callbacks=None):
         n_epoch = self.n_epoch if n_epoch is None else n_epoch
+        if callbacks is not None and not isinstance(callbacks, (list, tuple)):
+            callbacks = (callbacks,)
         gen_loss_history = []
         critic_loss_history = []
+        if self.verbose:
+            print(f'Length of dataloader: {len(self.trainloader)}')
+
+
         for epoch in range(n_epoch):
             epoch_gen_loss = 0
-            for data_batch in self.trainloader:
+            for it, data_batch in enumerate(self.trainloader):
+                if isinstance(data_batch, (list, tuple)):
+                    data_batch = data_batch[0]
                 data_batch = data_batch.to(self.device)
                 critic_loss, gen_loss = self.iteration(data_batch)
                 epoch_gen_loss += gen_loss / len(self.trainloader)
                 gen_loss_history.append(gen_loss)
                 critic_loss_history.append(critic_loss)
+                if self.verbose and it % 10 == 0:
+                    print(f'Iteration {it}, gen loss: {gen_loss:.3f}')
+
             if self.verbose:
                 print(f'Epoch {epoch}, gen loss: {epoch_gen_loss:.3f}')
+
+            if callbacks is not None:
+                for callback in callbacks:
+                    callback(self, epoch)
 
     def train_gaussian_mixture(self, target_sample, n_iter: int = 500):
         target_sample = target_sample.to(self.device)
