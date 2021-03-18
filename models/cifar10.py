@@ -1,49 +1,58 @@
-# TODO: check dimensions
-
+import torch
 from torch import nn
 from torch.nn import functional as F
-
-conv_kernel_size = 3
-conv_stride = 2
-conv_padding = 1
-
-deconv_kernel_size = 2
-deconv_stride = 2
-deconv_padding = 0
-
+from src.utils import Reshape
+import sys
 
 class Generator(nn.Module):
-    def __init__(self):
+    '''
+    Implementation of Generator architecture used in 
+    the paper https://arxiv.org/pdf/1902.03642.pdf 
+    For mode details see supplementary material.
+    '''
+
+    def __init__(self, batch_size):
         super(Generator, self).__init__()
-        self.conv1 = nn.Conv2d(3, 128, conv_kernel_size, conv_stride, conv_padding)
-        self.act1 = nn.LeakyReLU(0.2)
-        self.conv2 = nn.Conv2d(128, 2*128, conv_kernel_size, conv_stride, conv_padding)
-        self.act2 = nn.LeakyReLU(0.2)
-        self.conv3 = nn.Conv2d(2*128, 4*128, conv_kernel_size, conv_stride, conv_padding)
-        self.act3 = nn.LeakyReLU(0.2)
 
-        self.linear = nn.Linear(4*4*4*128, 1)
+        self.batch_size = batch_size
 
+        self.net = nn.Sequential(
+            nn.Linear(128, 4*4*4*128), #[batch_size, 128] -> [batch_size, 8192]
+            nn.ReLU(), 
+            Reshape(self.batch_size, 4*128, 4, 4),
+            nn.ConvTranspose1d(4*128, 2*128, 3, 2, 0),
+            nn.BatchNorm2d(2*128),
+            nn.ReLU(), 
+            nn.ConvTranspose2d(2*128, 2*128, 3, 2, 0),
+            nn.BatchNorm2d(128),
+            nn.ReLU(),
+            nn.ConvTranspose2d(128, 3, 3, 2, 0),
+            nn.Tanh()
+        )
+    
     def forward(self, x):
-        x = self.act1(self.conv1(x))
-        x = self.act2(self.conv2(x))
-        x = self.act3(self.conv3(x))
-        return self.linear(x)
+        x = self.net(x)
+        return x
 
+    def sample(self, batch_size):
+        z = torch.randn(batch_size, self.latent_dim)
+        x = self.forward(z)
+        return x
 
 class Critic(nn.Module):
+    '''
+    
+    '''
     def __init__(self):
         super(Critic, self).__init__()
-        self.linear = nn.Linear(128, 4*4*4*128)
-        self.deconv1 = nn.ConvTranspose2d(4*128, 2*128, deconv_kernel_size, deconv_stride, deconv_padding)
-        self.bn1 = nn.BatchNorm2d(2*128)
-        self.deconv2 = nn.ConvTranspose2d(2*128, 128, deconv_kernel_size, deconv_stride, deconv_padding)
-        self.bn2 = nn.BatchNorm2d(128)
-        self.deconv3 = nn.ConvTranspose2d(128, 3, deconv_kernel_size, deconv_stride, deconv_padding)
+        self.net = nn.Sequential(
+            nn.Conv2d(3, 128, 3, 2, 1),
+            nn.LeakyReLU(.2),
+            nn.Conv2d(128, 2*128, 3, 2, 1),
+            nn.LeakyReLU(.2),
+            nn.Linear(4*4*4*128, 1)
+        )
 
     def forward(self, x):
-        x = F.relu(self.linear(x)).reshape(-1, 4*128, 4, 4)
-        x = F.relu(self.bn1(self.deconv1(x)))
-        x = F.relu(self.bn2(self.deconv2(x)))
-        x = F.tanh(self.deconv3(x))
-        return x
+        out = self.net(x).squeeze(1)
+        return out
