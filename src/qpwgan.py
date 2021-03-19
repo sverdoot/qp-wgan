@@ -133,7 +133,7 @@ class QPWGAN():
                 epoch_gen_loss += gen_loss / len(self.trainloader)
                 gen_loss_history.append(gen_loss)
                 critic_loss_history.append(critic_loss)
-                if self.verbose and it % 10 == 0:
+                if self.verbose and it % 50 == 0:
                     print(f'Iteration {it}, gen loss: {gen_loss:.3f}, critic loss: {critic_loss:.3f}')
 
             if self.verbose:
@@ -252,7 +252,7 @@ class QPWGAN():
 
     @staticmethod
     def get_c_transform(cost, critic_vals):
-        x = torch.min(cost - critic_vals, dim=0)[0]
+        x = torch.min(cost - critic_vals[:, None], dim=0)[0]
         return x
 
     @staticmethod
