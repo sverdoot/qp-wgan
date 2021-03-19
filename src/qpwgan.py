@@ -81,7 +81,7 @@ class QPWGAN():
 
         for _ in range(self.n_critic_iter):
             critic_loss, critic_x, c_transform_y = self.critic_iteration(
-                data_batch, gen_batch.detach())
+                data_batch, gen_batch) #.detach())
 
         for p in self.critic.parameters():
             p.requires_grad = False
@@ -154,7 +154,7 @@ class QPWGAN():
             epoch_gen_loss = 0
             epoch_critic_loss = 0
             epoch_w_loss = 0
-            for data_batch in self.trainloaders:
+            for data_batch in self.trainloader:
                 if isinstance(data_batch, (list, tuple)):
                     data_batch = data_batch[0]
                 data_batch = data_batch.to(self.device)
