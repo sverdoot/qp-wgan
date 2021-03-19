@@ -112,15 +112,20 @@ def main(args):
         generator = cifar10.Generator().to(device)
         critic = cifar10.Critic().to(device)
 
+        def imshow(img, ax):
+            img = img / 2 + 0.5     # unnormalize
+            npimg = img.detach().cpu().numpy()
+            ax.imshow(np.transpose(npimg, (1, 2, 0)))
+
         def callback(wgan, epoch, *fargs, **fkwargs):
             if epoch % 1 != 0:
                 return
             sample = wgan.generator.sample(20, device=wgan.device)
             sample = sample.reshape(-1, 3, 32, 32)
-            sample = inv_normalize(sample).detach().cpu().numpy()
-            _, axs = plt.subplots(nrows=4, ncols=5, figsize=(10, 15))
+            #sample = np.vstack([inv_normalize(x).detach().cpu().numpy() for x in sample])
+            _, axs = plt.subplots(nrows=4, ncols=5, figsize=(15, 10))
             for ax, im in zip(axs.flat, sample):
-                ax.imshow(im)
+                imshow(im, ax)
                 ax.set_aspect('equal')
                 ax.axis('off')
             plt.savefig(Path(args.dump_dir, f'{wgan.q}_{wgan.p}_cifar10_{epoch}epoch.pdf'))
