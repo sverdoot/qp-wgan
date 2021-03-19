@@ -2,6 +2,9 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
+from matplotlib import pyplot as plt
+from pathlib import Path
+
 
 class Generator(nn.Module):
     def __init__(self):
@@ -59,3 +62,36 @@ class Critic(nn.Module):
     def forward(self, x):
         out = self.net(x).squeeze(1)
         return out
+
+
+def mnist_callback(**kw):
+    dump_dir = kw.get('dump_dir', '../test')
+    inv_normalize = kw.get('inv_normalize', lambda x: x)
+
+    def callback(wgan, epoch, *args, **kwargs):
+        wgan.generator.eval()
+        wgan.critic.eval()
+        if epoch % 1 != 0:
+            return
+        sample = wgan.generator.sample(100, device=wgan.device)
+        sample = sample.reshape(-1, 28, 28).detach().cpu()
+        _, axs = plt.subplots(nrows=10, ncols=10, figsize=(15, 15))
+        # plt.title(f'({wgan.q}, {wgan.p})-WGAN')
+        for ax, im in zip(axs.flat, sample):
+            im_ = inv_normalize(im[None])[0]
+            ax.imshow(im_)
+            ax.set_aspect('equal')
+            ax.axis('off')
+        plt.savefig(Path(dump_dir, f'{wgan.q}_{wgan.p}_mnist_{epoch}epoch.pdf'))
+        plt.close()
+
+    return callback
+
+        # data = train_dataset.data[:100]
+        # _, axs = plt.subplots(nrows=10, ncols=10, figsize=(15, 15))
+        # for ax, im in zip(axs.flat, data):
+        #     ax.imshow(im)
+        #     ax.set_aspect('equal')
+        #     ax.axis('off')
+        # plt.savefig(Path(dump_dir, f'mnist.pdf'))
+        # plt.close()

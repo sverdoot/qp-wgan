@@ -61,11 +61,19 @@ def main(args):
 
     Path(args.dump_dir).mkdir(exist_ok=True)
 
+    norm_mean = 0.5  # 0.1307
+    norm_std = 0.5  # 0.3081
+
     if args.task == 'mnist':
-        transform = T.Compose([T.ToTensor(), T.Normalize((0.1307,), (0.3081,)), T.Lambda(lambda x: torch.flatten(x))])
+        transform = T.Compose(
+            [T.ToTensor(),
+             T.Normalize((norm_mean,), (norm_std,)),
+             T.Lambda(lambda x: torch.flatten(x))
+             ]
+        )
         inv_normalize = T.Normalize(
-            mean=[-0.1307/0.3081,],
-            std=[1/0.3081,]
+            mean=(-norm_mean/norm_std,),
+            std=(1/norm_std,)
         )
 
         train_dataset = datasets.MNIST('data', train=True, download=True, transform=transform)
@@ -75,34 +83,16 @@ def main(args):
         critic = mnist.Critic().to(device)
         #critic.init_weights()
 
-        def callback(wgan, epoch, *fargs, **fkwargs):
-            if epoch % 1 != 0:
-                return
-            sample = wgan.generator.sample(100, device=wgan.device)
-            sample = sample.reshape(-1, 28, 28)
-            sample = inv_normalize(sample).detach().cpu().numpy()
-            _, axs = plt.subplots(nrows=10, ncols=10, figsize=(15, 15))
-            #plt.title(f'({wgan.q}, {wgan.p})-WGAN')
-            for ax, im in zip(axs.flat, sample):
-                ax.imshow(im)
-                ax.set_aspect('equal')
-                ax.axis('off')
-            plt.savefig(Path(args.dump_dir, f'{wgan.q}_{wgan.p}_mnist_{epoch}epoch.pdf'))
-            plt.close()
-
-            data = train_dataset.data[:100]
-            _, axs = plt.subplots(nrows=10, ncols=10, figsize=(15, 15))
-            for ax, im in zip(axs.flat, data):
-                ax.imshow(im)
-                ax.set_aspect('equal')
-                ax.axis('off')
-            plt.savefig(Path(args.dump_dir, f'mnist.pdf'))
-            plt.close()
-
-        callbacks = callback
+        callbacks = mnist.mnist_callback(inv_normalize=inv_normalize, dump_dir=args.dump_dir)
 
     elif args.task == 'cifar10':
-        transform = T.Compose([T.ToTensor(), T.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+        transform = T.Compose(
+            [T.ToTensor(),
+             T.Normalize(
+                 (0.5, 0.5, 0.5),
+                 (0.5, 0.5, 0.5))
+             ]
+        )
         inv_normalize = T.Normalize(
             mean=[-1.,-1.,-1.],
             std=[1/0.5,1/0.5,1/0.5]
@@ -112,21 +102,7 @@ def main(args):
         generator = cifar10.Generator().to(device)
         critic = cifar10.Critic().to(device)
 
-        def callback(wgan, epoch, *fargs, **fkwargs):
-            if epoch % 1 != 0:
-                return
-            sample = wgan.generator.sample(20, device=wgan.device)
-            sample = sample.reshape(-1, 3, 32, 32)
-            sample = inv_normalize(sample).detach().cpu().numpy()
-            _, axs = plt.subplots(nrows=4, ncols=5, figsize=(10, 15))
-            for ax, im in zip(axs.flat, sample):
-                ax.imshow(im)
-                ax.set_aspect('equal')
-                ax.axis('off')
-            plt.savefig(Path(args.dump_dir, f'{wgan.q}_{wgan.p}_cifar10_{epoch}epoch.pdf'))
-            plt.close()
-
-        callbacks = callback
+        callbacks = cifar10.cifar_callback(inv_normalize=inv_normalize, dump_dir=args.dump_dir)
 
     gen_optimizer = optim.Adam(generator.parameters(), **optim_params)
     critic_optimizer = optim.Adam(critic.parameters(), **optim_params)

@@ -127,6 +127,9 @@ class QPWGAN():
         return critic_loss, gen_loss.item()
 
     def train(self, n_epoch: int=None, callbacks=None):
+        self.generator.train()
+        self.critic.train()
+
         n_epoch = self.n_epoch if n_epoch is None else n_epoch
         if callbacks is not None and not isinstance(callbacks, (list, tuple)):
             callbacks = (callbacks,)
@@ -134,7 +137,6 @@ class QPWGAN():
         critic_loss_history = []
         if self.verbose:
             print(f'Length of dataloader: {len(self.trainloader)}')
-
 
         for epoch in range(n_epoch):
             epoch_gen_loss = 0
