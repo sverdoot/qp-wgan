@@ -14,7 +14,6 @@ class Generator(nn.Module):
             nn.LeakyReLU(.2),
             nn.Linear(512, 1024),
             nn.Tanh(),
-            #nn.ReLU(),
             nn.Linear(1024, 28 * 28),
             nn.LeakyReLU(.2),
         )
@@ -58,5 +57,5 @@ class Critic(nn.Module):
                 m.bias.data.fill_(0)
 
     def forward(self, x):
-        out = self.net(x).squeeze(1)  # .reshape(-1)
+        out = self.net(x).squeeze(1)
         return out

@@ -9,8 +9,9 @@ from torch.utils.data import DataLoader
 from torchvision import transforms as T
 from matplotlib import pyplot as plt
 
-from models import mnist
+from models import mnist, cifar10
 from qpwgan import QPWGAN
+from utils import random_seed, DUMP_DIR, DATA_DIR
 
 # fix for downloading MNIST
 from six.moves import urllib
@@ -19,12 +20,6 @@ opener.addheaders = [('User-agent', 'Mozilla/5.0')]
 urllib.request.install_opener(opener)
 
 optim_params = {'lr': 1e-4, 'betas': (0.5, 0.999)}
-
-
-def random_seed(seed):
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
-    np.random.seed(seed)
 
 
 def parse_arguments():
@@ -48,6 +43,7 @@ def parse_arguments():
     parser.add_argument('--reg_coef1', type=float, default=0.1)
     parser.add_argument('--reg_coef2', type=float, default=0.1)
     parser.add_argument('--search_space', type=str, choices=['full', 'x'], default='x')
+    parser.add_argument('--dump_dir', type=str, default=DUMP_DIR)
 
     args = parser.parse_args()
     return args
@@ -63,6 +59,8 @@ def main(args):
     if args.seed is not None:
         random_seed(args.seed)
 
+    Path(args.dump_dir).mkdir(exist_ok=True)
+
     if args.task == 'mnist':
         transform = T.Compose([T.ToTensor(), T.Normalize((0.1307,), (0.3081,)), T.Lambda(lambda x: torch.flatten(x))])
         inv_normalize = T.Normalize(
@@ -77,7 +75,7 @@ def main(args):
         critic = mnist.Critic().to(device)
         #critic.init_weights()
 
-        def callback(wgan, epoch, *args, **kwargs):
+        def callback(wgan, epoch, *fargs, **fkwargs):
             if epoch % 1 != 0:
                 return
             sample = wgan.generator.sample(100, device=wgan.device)
@@ -89,7 +87,7 @@ def main(args):
                 ax.imshow(im)
                 ax.set_aspect('equal')
                 ax.axis('off')
-            plt.savefig(Path('../test', f'{wgan.q}_{wgan.p}_mnist_{epoch}epoch.pdf'))
+            plt.savefig(Path(args.dump_dir, f'{wgan.q}_{wgan.p}_mnist_{epoch}epoch.pdf'))
             plt.close()
 
             data = train_dataset.data[:100]
@@ -98,7 +96,34 @@ def main(args):
                 ax.imshow(im)
                 ax.set_aspect('equal')
                 ax.axis('off')
-            plt.savefig(Path('../test', f'mnist.pdf'))
+            plt.savefig(Path(args.dump_dir, f'mnist.pdf'))
+            plt.close()
+
+        callbacks = callback
+
+    elif args.task == 'cifar10':
+        transform = T.Compose([T.ToTensor(), T.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+        inv_normalize = T.Normalize(
+            mean=[-1.,-1.,-1.],
+            std=[1/0.5,1/0.5,1/0.5]
+        )
+        train_dataset = datasets.CIFAR10(DATA_DIR, train=True, transform=transform, download=True)
+        trainloader = DataLoader(train_dataset, shuffle=True, batch_size=args.batch_size)
+        generator = cifar10.Generator().to(device)
+        critic = cifar10.Critic().to(device)
+
+        def callback(wgan, epoch, *fargs, **fkwargs):
+            if epoch % 1 != 0:
+                return
+            sample = wgan.generator.sample(20, device=wgan.device)
+            sample = sample.reshape(-1, 3, 32, 32)
+            sample = inv_normalize(sample).detach().cpu().numpy()
+            _, axs = plt.subplots(nrows=4, ncols=5, figsize=(10, 15))
+            for ax, im in zip(axs.flat, sample):
+                ax.imshow(im)
+                ax.set_aspect('equal')
+                ax.axis('off')
+            plt.savefig(Path(args.dump_dir, f'{wgan.q}_{wgan.p}_cifar10_{epoch}epoch.pdf'))
             plt.close()
 
         callbacks = callback

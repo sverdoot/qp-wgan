@@ -49,17 +49,18 @@ class QPWGAN():
         #cost = torch.norm(data_batch[:, None, :] - gen_batch[None, ...], p=self.q, dim=-1)**self.p / self.p
         critic_vals = self.critic(batch)
         c_transform_vals = self.get_c_transform(full_cost, critic_vals)
+        #print(full_cost.shape, critic_vals.shape, c_transform_vals.shape)
         full_xi_vals = full_cost - \
             critic_vals[:, None] - c_transform_vals[None, :]
         
         penalty2 = self.admissable_penalty(full_xi_vals)
         if self.search_space == 'full':
             xy_xi_vals = full_cost[:batch_size, batch_size:] - \
-            critic_vals[:batch_size] - c_transform_vals[batch_size:]
+            critic_vals[:batch_size, None] - c_transform_vals[None, batch_size:]
             c_transform_y = c_transform_vals[batch_size:].mean()
         elif self.search_space == 'x':
             xy_xi_vals = full_cost[:batch_size, :] - \
-            critic_vals[:batch_size] - c_transform_vals
+            critic_vals[:batch_size, None] - c_transform_vals[None, :]
             c_transform_y = c_transform_vals.mean()
         penalty1 = self.xy_penalty(xy_xi_vals)
         critic_x = critic_vals[:batch_size].mean()
@@ -81,10 +82,12 @@ class QPWGAN():
 
         for _ in range(self.n_critic_iter):
             critic_loss, critic_x, c_transform_y = self.critic_iteration(
-                data_batch, gen_batch) #.detach())
+                data_batch, gen_batch)
 
         for p in self.critic.parameters():
             p.requires_grad = False
+
+        #gen_batch = self.generator.sample(batch_size, self.device)
 
         if self.search_space == 'full':
             batch = torch.cat([data_batch, gen_batch], dim=0)
@@ -144,12 +147,11 @@ class QPWGAN():
                     callback(self, epoch)
 
     def train_gaussian_mixture(self, n_epoch: int = 500):
+        # TODO: substitute this method with existing 'train' using callbacks
         target_sample = self.trainloader.dataset.data
         gen_loss_history = []
         critic_loss_history = []
         wass_history = []
-        print('Generator:', self.generator)
-        print('Critic:', self.critic)
         for iter_ in range(n_epoch):
             epoch_gen_loss = 0
             epoch_critic_loss = 0
@@ -210,8 +212,8 @@ class QPWGAN():
                 plt.legend()
                 plt.savefig(
                     Path(
-                        '../test',
-                        f'iteration_{iter_}_sampled_gaussian_p={self.p}.pdf'))
+                        'dump',
+                        f'gaussians_{iter_}_generator_p={self.p}.pdf'))
                 plt.close()
 
                 _ = plt.figure()
@@ -244,15 +246,15 @@ class QPWGAN():
                 plt.legend()
                 plt.savefig(
                     Path(
-                        '../test',
-                        f'iteration_{iter_}_critic_p={self.p}.pdf'))
+                        'dump',
+                        f'gaussians_{iter_}_critic_p={self.p}.pdf'))
                 plt.close()
         
         return gen_loss_history, wass_history
 
     @staticmethod
     def get_c_transform(cost, critic_vals):
-        x = torch.min(cost - critic_vals, dim=0)[0]
+        x = torch.min(cost - critic_vals[:, None], dim=0)[0]
         return x
 
     @staticmethod

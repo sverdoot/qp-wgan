@@ -6,6 +6,8 @@ from matplotlib import pyplot as plt
 import argparse
 from pathlib import Path
 
+from utils import random_seed
+
 colors = ['b', 'g', 'r']
 
 
@@ -38,13 +40,17 @@ def parse_arguments():
     parser.add_argument('-p', nargs='+', type=int, default=1)
     parser.add_argument('--n_iter', type=int, default=100)
     parser.add_argument('--save_dir', type=str, default='figs')
+    parser.add_argument('--seed', type=int, default=None)
 
     args = parser.parse_args()
     return args
 
 
 def main(args):
-    fig, ax = plt.subplots()
+    if args.seed is not None:
+        random_seed(args.seed)
+
+    _, ax = plt.subplots()
     ax2 = ax.twinx()
     for i, p in enumerate(args.p):
 
@@ -66,10 +72,8 @@ def main(args):
             optimizer.step()
 
             wass.append(W.item())
-            # print(generator.theta.grad)
             grad_norms.append(torch.norm(generator.theta.grad, p=2).item())
         samples = np.stack(samples, 0)
-        # print(len(wass))
 
         #gen_sample = generator().detach().cpu().numpy()
         target_sample = target_sample.detach().cpu().numpy()

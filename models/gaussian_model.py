@@ -65,5 +65,5 @@ class Critic(nn.Module):
                 m.bias.data.fill_(0)
 
     def forward(self, x):
-        out = self.layer_seq(x)
+        out = self.layer_seq(x).squeeze(1)
         return out

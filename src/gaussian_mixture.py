@@ -11,9 +11,11 @@ from torch.utils.data import DataLoader
 
 from models.gaussian_model import Generator, Critic
 from qpwgan import QPWGAN
-from main import optim_params, random_seed
+from main import optim_params
+from utils import random_seed, DUMP_DIR
 
 # optim_params = {'lr': 1e-4, 'betas': (0.5, 0.999)}
+
 
 def generate_2d_gmm(n_data: Union[int, List[int]],
                     mu_vector: np.array, variance_vector: np.array) -> np.array:
@@ -53,13 +55,18 @@ def parse_arguments():
     parser.add_argument('--search_space', type=str, choices=['full', 'x'], default='x')
     parser.add_argument('--reg_coef1', type=float, default=0.1)
     parser.add_argument('--reg_coef2', type=float, default=0.1)
+    parser.add_argument('--seed', type=int, default=None)
+    parser.add_argument('--dump_dir', type=str, default=DUMP_DIR)
     args = parser.parse_args()
     return args
 
 
 def main(args):
+    if args.seed is not None:
+        random_seed(args.seed)
     device = torch.device(
         'cuda') if torch.cuda.is_available() else torch.device('cpu')
+    Path(args.dump_dir).mkdir(exist_ok=True)
 
     if args.amount_of_points is not None:
         args.points_per_cluster = [
@@ -79,9 +86,6 @@ def main(args):
                                     )
 
     target_dataloader = DataLoader(torch.FloatTensor(target_sample), shuffle=True, batch_size=args.batch_size)
-
-    # fig, ax = plt.subplots()
-    # ax2 = ax.twinx()
 
     for i, p in enumerate(args.p):
         print("=" * 50)
@@ -132,20 +136,6 @@ def main(args):
         plt.grid()
         plt.savefig(Path(args.save_dir, f'gaussian_loss_p={p}.pdf'))
         plt.close()
-
-#         ax.plot(np.arange(args.n_iter), wass, label=f'p={p}', color=colors[i])
-#         ax2.plot(np.arange(args.n_iter), grad_norms, linestyle='--', color=colors[i])
-    #     ax.grid()
-    # ax.set_xlabel('Iterations')
-    # ax.set_ylabel(r'p-Wasserstein distance')
-
-#     ax2.yaxis.set_label_position("right")
-#     ax2.set_ylabel(r'$\|\nabla_{\theta} W_p(g_{\theta}, \mu)\|_2$')
-
-#     ax.legend()
-    # ax2.legend()
-    # plt.savefig(Path(args.save_dir, f'sampled_gaussian_p={args.p}.png'))
-    # plt.close()
 
 
 if __name__ == '__main__':
