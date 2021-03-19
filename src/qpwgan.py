@@ -44,8 +44,14 @@ class QPWGAN():
             gen_batch_ = gen_batch
         # full_cost = torch.norm(
         #     batch[:, None, :] - batch[None, ...], p=self.q, dim=-1)**self.p / self.p
-        full_cost = torch.norm(
-            batch[:, None, :] - gen_batch_[None, ...], p=self.q, dim=-1)**self.p / self.p
+
+        if batch.ndim == 2:
+            full_cost = torch.norm(
+                batch[:, None, :] - gen_batch_[None, ...], p=self.q, dim=-1)**self.p / self.p
+        elif batch.ndim == 4:
+            full_cost = torch.norm(
+                batch[:, None, :, :, :] - gen_batch_[None, ...], p=self.q, dim=(2, 3, 4))**self.p / self.p
+
         #cost = torch.norm(data_batch[:, None, :] - gen_batch[None, ...], p=self.q, dim=-1)**self.p / self.p
         critic_vals = self.critic(batch)
         c_transform_vals = self.get_c_transform(full_cost, critic_vals)
@@ -95,8 +101,12 @@ class QPWGAN():
         elif self.search_space == 'x':
             batch = data_batch
             gen_batch_ = gen_batch
-        full_cost = torch.norm(
-            batch[:, None, :] - gen_batch_[None, ...], p=self.q, dim=-1)**self.p / self.p
+        if batch.ndim == 2:
+            full_cost = torch.norm(
+                batch[:, None, :] - gen_batch_[None, ...], p=self.q, dim=-1)**self.p / self.p
+        elif batch.ndim == 4:
+            full_cost = torch.norm(
+                batch[:, None, :, :, :] - gen_batch_[None, ...], p=self.q, dim=(2, 3, 4))**self.p / self.p
         critic_vals = self.critic(batch)
         c_transform_vals = self.get_c_transform(full_cost, critic_vals)
 
