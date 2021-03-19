@@ -56,7 +56,7 @@ def parse_arguments():
 def main(args):
     if args.device is not None:
         device = torch.device(
-            args.devce if torch.cuda.is_available() else 'cpu')
+            args.device if torch.cuda.is_available() else 'cpu')
     else:
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -119,6 +119,7 @@ def main(args):
                   verbose=True,
                   reg_coef1=args.reg_coef1,
                   reg_coef2=args.reg_coef2,
+                  device=device
                   )
 
     wgan.train(callbacks=callbacks)
