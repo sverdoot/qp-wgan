@@ -11,7 +11,6 @@ from matplotlib import pyplot as plt
 
 from models import mnist
 from qpwgan import QPWGAN
-from gaussian_mixture import generate_2d_gmm
 
 # fix for downloading MNIST
 from six.moves import urllib
