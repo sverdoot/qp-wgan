@@ -37,7 +37,7 @@ class QPWGAN():
         assert data_batch.shape[0] == gen_batch.shape[0]
         batch_size = data_batch.shape[0]
         if self.search_space == 'full':
-            batch = torch.cat([data_batch, gen_batch.detach()], dim=0)
+            batch = torch.cat([data_batch, gen_batch], dim=0)
             gen_batch_ = torch.cat([data_batch, gen_batch], dim=0)
         elif self.search_space == 'x':
             batch = data_batch
@@ -81,13 +81,13 @@ class QPWGAN():
 
         for _ in range(self.n_critic_iter):
             critic_loss, critic_x, c_transform_y = self.critic_iteration(
-                data_batch, gen_batch)
+                data_batch, gen_batch.detach())
 
         for p in self.critic.parameters():
             p.requires_grad = False
 
         if self.search_space == 'full':
-            batch = torch.cat([data_batch, gen_batch.detach()], dim=0)
+            batch = torch.cat([data_batch, gen_batch], dim=0)
             gen_batch_ = torch.cat([data_batch, gen_batch], dim=0)
         elif self.search_space == 'x':
             batch = data_batch
@@ -154,7 +154,7 @@ class QPWGAN():
             epoch_gen_loss = 0
             epoch_critic_loss = 0
             epoch_w_loss = 0
-            for it, data_batch in enumerate(self.trainloader):
+            for data_batch in self.trainloaders:
                 if isinstance(data_batch, (list, tuple)):
                     data_batch = data_batch[0]
                 data_batch = data_batch.to(self.device)
@@ -174,7 +174,7 @@ class QPWGAN():
                     print(
                         f'Epoch {iter_}/{n_epoch}, gen loss: {gen_loss:.3f}, critic_loss : {critic_loss:.3f}')
             if iter_ % 100 == 0 and iter_ > 0:
-                fig = plt.figure()
+                _ = plt.figure()
                 sample = self.generator.sample(
                     batch_size=100, device=self.device).to('cpu').detach().numpy()
                 kernel = stats.gaussian_kde(np.unique(sample, axis=0).T) #reshape(2, -1))
@@ -203,7 +203,7 @@ class QPWGAN():
                                           1],
                             color='cornflowerblue',
                             s=10,
-                            label='original data', alpha=0.3)
+                            label='original data', alpha=0.7)
                 target_sample = torch.Tensor(target_sample).to(self.device)
                 plt.title(f'p={self.p} iteration {iter_}')
                 plt.plot([0], [0], marker='x', markersize=10, color='black')
@@ -214,7 +214,7 @@ class QPWGAN():
                         f'iteration_{iter_}_sampled_gaussian_p={self.p}.pdf'))
                 plt.close()
 
-                fig = plt.figure()
+                _ = plt.figure()
                 target_sample = target_sample.detach().cpu().numpy()
                 plt.scatter(target_sample[:,
                                           0],
@@ -222,7 +222,7 @@ class QPWGAN():
                                           1],
                             color='cornflowerblue',
                             s=10,
-                            label='original data', alpha=0.3)
+                            label='original data', alpha=0.7)
                 target_sample = torch.Tensor(target_sample).to(self.device)
 
                 
@@ -237,7 +237,7 @@ class QPWGAN():
 
 #                 CS = plt.pcolormesh(X, Y, output_real.reshape(X.shape), cmap=plt.cm.rainbow)
                 CS = plt.contour(X, Y, output_real.reshape(
-                    X.shape), levels=np.linspace(np.quantile(output_real, 0.75), 1, 10))
+                    X.shape), levels=np.linspace(np.quantile(output_real, 0.75), output_real.max(), 10))
 
                 CB = plt.colorbar(CS, shrink=0.9)#, extend='both')
                 plt.title(f'Critic values p={self.p} iteration {iter_}')

@@ -13,5 +13,5 @@ Approximating a Gaussian mixture distribution
 
 ```bash
 mkdir -p ../test
-python src/gaussian_mixture.py --n_iter 601 --search_space full
+python src/gaussian_mixture.py --n_epoch 601 --search_space full
 ```

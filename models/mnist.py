@@ -58,6 +58,5 @@ class Critic(nn.Module):
                 m.bias.data.fill_(0)
 
     def forward(self, x):
-        #print(self.net[0].weight)
         out = self.net(x).squeeze(1)  # .reshape(-1)
         return out

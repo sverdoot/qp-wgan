@@ -73,9 +73,9 @@ def main(args):
         train_dataset = datasets.MNIST('data', train=True, download=True, transform=transform)
         trainloader = DataLoader(train_dataset, shuffle=True, batch_size=args.batch_size)
         generator = mnist.Generator().to(device)
-        generator.init_weights()
+        #generator.init_weights()
         critic = mnist.Critic().to(device)
-        critic.init_weights()
+        #critic.init_weights()
 
         def callback(wgan, epoch, *args, **kwargs):
             if epoch % 1 != 0:
