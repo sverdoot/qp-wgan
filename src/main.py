@@ -11,6 +11,7 @@ from matplotlib import pyplot as plt
 
 from models import mnist
 from qpwgan import QPWGAN
+from gaussian_mixture import generate_2d_gmm
 
 # fix for downloading MNIST
 from six.moves import urllib
@@ -40,7 +41,7 @@ def parse_arguments():
         default='mnist')
     parser.add_argument('--n_epoch', type=int, default=30)
     parser.add_argument('-q', '--q', type=int, default=2)
-    parser.add_argument('-p', '--p', default=2)
+    parser.add_argument('-p', '--p', type=int, default=2)
     parser.add_argument('--n_critic_iter', type=int, default=1)
     parser.add_argument('-b', '--batch_size', type=int, default=64)
     parser.add_argument('-d', '--device', type=int, default=None)
@@ -71,7 +72,7 @@ def main(args):
         )
 
         train_dataset = datasets.MNIST('data', train=True, download=True, transform=transform)
-        trainloader = DataLoader(train_dataset, batch_size=args.batch_size)
+        trainloader = DataLoader(train_dataset, shuffle=True, batch_size=args.batch_size)
         generator = mnist.Generator().to(device)
         generator.init_weights()
         critic = mnist.Critic().to(device)
@@ -83,7 +84,7 @@ def main(args):
             sample = wgan.generator.sample(100, device=wgan.device)
             sample = sample.reshape(-1, 28, 28)
             sample = inv_normalize(sample).detach().cpu().numpy()
-            fig, axs = plt.subplots(nrows=10, ncols=10, figsize=(15, 15))
+            _, axs = plt.subplots(nrows=10, ncols=10, figsize=(15, 15))
             #plt.title(f'({wgan.q}, {wgan.p})-WGAN')
             for ax, im in zip(axs.flat, sample):
                 ax.imshow(im)
@@ -92,8 +93,16 @@ def main(args):
             plt.savefig(Path('../test', f'{wgan.q}_{wgan.p}_mnist_{epoch}epoch.pdf'))
             plt.close()
 
-        callbacks = callback
+            data = train_dataset.data[:100]
+            _, axs = plt.subplots(nrows=10, ncols=10, figsize=(15, 15))
+            for ax, im in zip(axs.flat, data):
+                ax.imshow(im)
+                ax.set_aspect('equal')
+                ax.axis('off')
+            plt.savefig(Path('../test', f'mnist.pdf'))
+            plt.close()
 
+        callbacks = callback
 
     gen_optimizer = optim.Adam(generator.parameters(), **optim_params)
     critic_optimizer = optim.Adam(critic.parameters(), **optim_params)

@@ -6,6 +6,8 @@ from matplotlib import pyplot as plt
 import argparse
 from pathlib import Path
 from typing import List, Union
+import math
+from torch.utils.data import DataLoader
 
 from models.gaussian_model import Generator, Critic
 from qpwgan import QPWGAN
@@ -35,8 +37,9 @@ def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument('-q', type=int, default=2)
     parser.add_argument('-p', nargs='+', type=int, default=[1, 2, 5])
-    parser.add_argument('--n_iter', type=int, default=500)
+    parser.add_argument('--n_epoch', type=int, default=500)
     parser.add_argument('--n_critic_iter', type=int, default=5)
+    parser.add_argument('--batch_size', type=int, default=64)
     parser.add_argument('--number_of_clusters', type=int, default=None)
     parser.add_argument('--amount_of_points', type=int, default=None)
     parser.add_argument(
@@ -48,8 +51,8 @@ def parse_arguments():
             50])
     parser.add_argument('--save_dir', type=str, default='figs')
     parser.add_argument('--search_space', type=str, choices=['full', 'x'], default='x')
-    parser.add_argument('--reg_coef1', type=float, default=1.)
-    parser.add_argument('--reg_coef2', type=float, default=1.)
+    parser.add_argument('--reg_coef1', type=float, default=0.1)
+    parser.add_argument('--reg_coef2', type=float, default=0.1)
     args = parser.parse_args()
     return args
 
@@ -75,6 +78,8 @@ def main(args):
                                     variance_vector=variances
                                     )
 
+    target_dataloader = DataLoader(torch.FloatTensor(target_sample), shuffle=True, batch_size=args.batch_size)
+
     # fig, ax = plt.subplots()
     # ax2 = ax.twinx()
 
@@ -93,7 +98,7 @@ def main(args):
 
         wgan = QPWGAN(generator,
                       critic,
-                      None,
+                      target_dataloader,
                       gen_optimizer,
                       critic_optimizer,
                       p=p,
@@ -104,7 +109,7 @@ def main(args):
                       reg_coef1=args.reg_coef1,
                       reg_coef2=args.reg_coef2,
                       )
-        gen_loss_history, wass_history = wgan.train_gaussian_mixture(torch.Tensor(target_sample), args.n_iter)
+        gen_loss_history, wass_history = wgan.train_gaussian_mixture(args.n_epoch)
         sample = wgan.generator.sample(
             batch_size=100, device=device).to('cpu').detach().numpy()
 

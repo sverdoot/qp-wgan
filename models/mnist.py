@@ -14,6 +14,7 @@ class Generator(nn.Module):
             nn.LeakyReLU(.2),
             nn.Linear(512, 1024),
             nn.Tanh(),
+            #nn.ReLU(),
             nn.Linear(1024, 28 * 28),
             nn.LeakyReLU(.2),
         )
@@ -21,7 +22,7 @@ class Generator(nn.Module):
     def init_weights(self):
         for m in self.net:
             if type(m) == nn.Linear:
-                m.weight.data.normal_(0.0, 0.1)
+                m.weight.data.normal_(0.0, 0.05)
                 m.bias.data.fill_(0)
 
     def forward(self, z):
@@ -53,10 +54,10 @@ class Critic(nn.Module):
     def init_weights(self):
         for m in self.net:
             if type(m) == nn.Linear:
-                m.weight.data.normal_(0.0, 0.1)
+                m.weight.data.normal_(0.0, 0.05)
                 m.bias.data.fill_(0)
 
     def forward(self, x):
-        #print(x)
+        #print(self.net[0].weight)
         out = self.net(x).squeeze(1)  # .reshape(-1)
         return out
