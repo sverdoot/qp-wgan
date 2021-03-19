@@ -10,6 +10,7 @@ from torchvision.models.inception import inception_v3
 import numpy as np
 from scipy.stats import entropy
 
+
 def inception_score(imgs: torch.Tensor, 
                     device: torch.device = torch.device('cuda'), 
                     batch_size: int = 128, 
@@ -37,6 +38,7 @@ def inception_score(imgs: torch.Tensor,
     inception_model = inception_v3(pretrained=True, transform_input=False).type(dtype)
     inception_model.eval();
     up = nn.Upsample(size=(299, 299), mode='bilinear').type(dtype)
+
     def get_pred(x):
         if resize:
             x = up(x)

@@ -1,3 +1,4 @@
+import wandb
 import torch
 import numpy as np
 import argparse
@@ -50,6 +51,10 @@ def parse_arguments():
 
 
 def main(args):
+
+    wandb.init(project='qp-wgan', entity='samokhinv')
+    wandb.config.update(args)
+
     if args.device is not None:
         device = torch.device(
             args.device if torch.cuda.is_available() else 'cpu')
@@ -89,13 +94,13 @@ def main(args):
         transform = T.Compose(
             [T.ToTensor(),
              T.Normalize(
-                 (0.5, 0.5, 0.5),
-                 (0.5, 0.5, 0.5))
+                 (norm_mean,),
+                 (norm_std,))
              ]
         )
         inv_normalize = T.Normalize(
-            mean=[-1.,-1.,-1.],
-            std=[1/0.5,1/0.5,1/0.5]
+            mean=(-norm_mean/norm_std,),
+            std=(1/norm_std,)
         )
         train_dataset = datasets.CIFAR10(DATA_DIR, train=True, transform=transform, download=True)
         trainloader = DataLoader(train_dataset, shuffle=True, batch_size=args.batch_size)
@@ -107,6 +112,8 @@ def main(args):
     gen_optimizer = optim.Adam(generator.parameters(), **optim_params)
     critic_optimizer = optim.Adam(critic.parameters(), **optim_params)
 
+    wandb.watch(generator)
+    wandb.watch(critic)
     wgan = QPWGAN(generator,
                   critic,
                   trainloader,

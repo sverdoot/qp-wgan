@@ -1,4 +1,5 @@
 import torch
+import wandb
 from torch import nn
 from torch.nn import functional as F
 from matplotlib import pyplot as plt
@@ -140,12 +141,14 @@ class QPWGAN():
 
         for epoch in range(n_epoch):
             epoch_gen_loss = 0
+            epoch_critic_loss = 0
             for it, data_batch in enumerate(self.trainloader):
                 if isinstance(data_batch, (list, tuple)):
                     data_batch = data_batch[0]
                 data_batch = data_batch.to(self.device)
                 critic_loss, gen_loss = self.iteration(data_batch)
                 epoch_gen_loss += gen_loss / len(self.trainloader)
+                epoch_critic_loss += critic_loss / len(self.trainloader)
                 gen_loss_history.append(gen_loss)
                 critic_loss_history.append(critic_loss)
                 if self.verbose and it % 50 == 0:
@@ -153,6 +156,7 @@ class QPWGAN():
 
             if self.verbose:
                 print(f'Epoch {epoch}, gen loss: {epoch_gen_loss:.3f}')
+                wandb.log({'gen loss': epoch_gen_loss, 'critic loss': epoch_critic_loss})
 
             if callbacks is not None:
                 for callback in callbacks:

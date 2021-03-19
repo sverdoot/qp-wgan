@@ -18,9 +18,7 @@ class Generator(nn.Module):
             layers_list.append(nn.Linear(layers_dim[i], layers_dim[i + 1]))
             if i != len(layers_dim) - 2:
                 layers_list.append(
-                    output_non_linear if i == (
-                        len(layers_dim) -
-                        2) else non_linear)
+                    output_non_linear if i == (len(layers_dim) - 2) else non_linear)
         self.layer_seq = nn.Sequential(*layers_list)
 
     def init_weights(self):

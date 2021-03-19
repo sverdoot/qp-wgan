@@ -1,4 +1,5 @@
 import torch
+import wandb
 from torch import nn
 from torch.nn import functional as F
 from src.utils import Reshape
@@ -6,6 +7,7 @@ import sys
 
 import matplotlib.pyplot as plt
 from pathlib import Path
+
 
 class Generator(nn.Module):
     '''
@@ -76,10 +78,11 @@ def cifar_callback(**kw):
         _, axs = plt.subplots(nrows=4, ncols=5, figsize=(10, 15))
         for ax, im in zip(axs.flat, sample):
             im_ = inv_normalize(im)
-            ax.imshow(im_)
+            ax.imshow(torch.movedim(im_, 0, 2))
             ax.set_aspect('equal')
             ax.axis('off')
         plt.savefig(Path(dump_dir, f'{wgan.q}_{wgan.p}_cifar10_{epoch}epoch.pdf'))
         plt.close()
+        wandb.log({"examples": [wandb.Image(i) for i in sample]})
 
     return callback

@@ -1,4 +1,5 @@
 import torch
+import wandb
 from torch import nn
 from torch.nn import functional as F
 
@@ -84,6 +85,7 @@ def mnist_callback(**kw):
             ax.axis('off')
         plt.savefig(Path(dump_dir, f'{wgan.q}_{wgan.p}_mnist_{epoch}epoch.pdf'))
         plt.close()
+        wandb.log({"examples": [wandb.Image(i) for i in sample]})
 
     return callback
 
