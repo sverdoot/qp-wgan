@@ -33,7 +33,8 @@ def parse_arguments():
             'gmm',
             'discrete'],
         default='mnist')
-    parser.add_argument('--n_epoch', type=int, default=30)
+    parser.add_argument('--n_epoch', type=int, default=50)
+    parser.add_argument('--n_iter', type=int, default=int(5e3))
     parser.add_argument('-q', '--q', type=int, default=2)
     parser.add_argument('-p', '--p', type=int, default=2)
     parser.add_argument('--n_critic_iter', type=int, default=1)
@@ -44,6 +45,7 @@ def parse_arguments():
     parser.add_argument('--reg_coef2', type=float, default=0.1)
     parser.add_argument('--search_space', type=str, choices=['full', 'x'], default='x')
     parser.add_argument('--dump_dir', type=str, default=DUMP_DIR)
+    parser.add_argument('--num_workers', type=int, default=0)
 
     args = parser.parse_args()
     return args
@@ -69,7 +71,7 @@ def main(args):
         )
 
         train_dataset = datasets.MNIST('data', train=True, download=True, transform=transform)
-        trainloader = DataLoader(train_dataset, shuffle=True, batch_size=args.batch_size)
+        trainloader = DataLoader(train_dataset, shuffle=True, batch_size=args.batch_size, num_workers=args.num_workers)
         generator = mnist.Generator().to(device)
         #generator.init_weights()
         critic = mnist.Critic().to(device)
@@ -108,7 +110,7 @@ def main(args):
             std=[1/0.5,1/0.5,1/0.5]
         )
         train_dataset = datasets.CIFAR10(DATA_DIR, train=True, transform=transform, download=True)
-        trainloader = DataLoader(train_dataset, shuffle=True, batch_size=args.batch_size)
+        trainloader = DataLoader(train_dataset, shuffle=True, batch_size=args.batch_size, num_workers=args.num_workers)
         generator = cifar10.Generator().to(device)
         critic = cifar10.Critic().to(device)
 
@@ -136,6 +138,8 @@ def main(args):
     gen_optimizer = optim.Adam(generator.parameters(), **optim_params)
     critic_optimizer = optim.Adam(critic.parameters(), **optim_params)
 
+    n_epoch = int(args.n_iter * len(trainloader) / args.batch_size / args.n_critic_iter)
+
     wgan = QPWGAN(generator,
                   critic,
                   trainloader,
@@ -143,7 +147,7 @@ def main(args):
                   critic_optimizer,
                   q=args.q,
                   p=args.p,
-                  n_epoch=args.n_epoch,
+                  n_epoch=n_epoch,
                   n_critic_iter=args.n_critic_iter,
                   search_space=args.search_space,
                   verbose=True,
