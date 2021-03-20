@@ -5,6 +5,11 @@ pip install -r requirements.txt
 pip install -e .
 ```
 
+To use wandb tracking, do in advance
+```bash
+wandb login
+```
+
 Optimization of Wasserstein metric on discrete measure
 
 ```bash
