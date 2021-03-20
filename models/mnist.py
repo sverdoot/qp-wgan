@@ -106,7 +106,7 @@ def mnist_callback(**kw):
             samples_from_dataset = samples_from_dataset.reshape(-1, samples_from_dataset.shape[2])
             sample = wgan.generator.sample(2000, device=wgan.device).detach().cpu()
             
-            distances = closest_samples(samples, generated)
+            distances = closest_samples(samples_from_dataset, sample) #was: samples, generated
             
             json.dump(distances, Path(dump_dir, f'mnist_distances__{wgan.q}__{wgan.p}__critic_{wgan.n_critic_iter}__epoch_{epoch}.json').open('w'))
             
