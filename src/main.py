@@ -43,7 +43,8 @@ def parse_arguments():
     parser.add_argument('--seed', type=int, default=None)
     parser.add_argument('--reg_coef1', type=float, default=0.1)
     parser.add_argument('--reg_coef2', type=float, default=0.1)
-    parser.add_argument('--search_space', type=str, choices=['full', 'x'], default='x')
+    parser.add_argument('--search_space', type=str,
+                        choices=['full', 'x'], default='x')
     parser.add_argument('--dump_dir', type=str, default=DUMP_DIR)
 
     args = parser.parse_args()
@@ -81,14 +82,17 @@ def main(args):
             std=(1/norm_std,)
         )
 
-        train_dataset = datasets.MNIST('data', train=True, download=True, transform=transform)
-        trainloader = DataLoader(train_dataset, shuffle=True, batch_size=args.batch_size)
+        train_dataset = datasets.MNIST(
+            'data', train=True, download=True, transform=transform)
+        trainloader = DataLoader(
+            train_dataset, shuffle=True, batch_size=args.batch_size)
         generator = mnist.Generator().to(device)
-        #generator.init_weights()
+        # generator.init_weights()
         critic = mnist.Critic().to(device)
-        #critic.init_weights()
+        # critic.init_weights()
 
-        callbacks = mnist.mnist_callback(inv_normalize=inv_normalize, dump_dir=args.dump_dir)
+        callbacks = mnist.mnist_callback(
+            inv_normalize=inv_normalize, dump_dir=args.dump_dir)
 
     elif args.task == 'cifar10':
         transform = T.Compose(
@@ -102,12 +106,15 @@ def main(args):
             mean=(-norm_mean/norm_std,),
             std=(1/norm_std,)
         )
-        train_dataset = datasets.CIFAR10(DATA_DIR, train=True, transform=transform, download=True)
-        trainloader = DataLoader(train_dataset, shuffle=True, batch_size=args.batch_size)
+        train_dataset = datasets.CIFAR10(
+            DATA_DIR, train=True, transform=transform, download=True)
+        trainloader = DataLoader(
+            train_dataset, shuffle=True, batch_size=args.batch_size)
         generator = cifar10.Generator().to(device)
         critic = cifar10.Critic().to(device)
 
-        callbacks = cifar10.cifar_callback(inv_normalize=inv_normalize, dump_dir=args.dump_dir)
+        callbacks = cifar10.cifar_callback(
+            inv_normalize=inv_normalize, dump_dir=args.dump_dir)
 
     gen_optimizer = optim.Adam(generator.parameters(), **optim_params)
     critic_optimizer = optim.Adam(critic.parameters(), **optim_params)

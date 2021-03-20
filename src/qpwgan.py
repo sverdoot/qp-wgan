@@ -59,15 +59,16 @@ class QPWGAN():
         #print(full_cost.shape, critic_vals.shape, c_transform_vals.shape)
         full_xi_vals = full_cost - \
             critic_vals[:, None] - c_transform_vals[None, :]
-        
+
         penalty2 = self.admissable_penalty(full_xi_vals)
         if self.search_space == 'full':
             xy_xi_vals = full_cost[:batch_size, batch_size:] - \
-            critic_vals[:batch_size, None] - c_transform_vals[None, batch_size:]
+                critic_vals[:batch_size, None] - \
+                c_transform_vals[None, batch_size:]
             c_transform_y = c_transform_vals[batch_size:].mean()
         elif self.search_space == 'x':
             xy_xi_vals = full_cost[:batch_size, :] - \
-            critic_vals[:batch_size, None] - c_transform_vals[None, :]
+                critic_vals[:batch_size, None] - c_transform_vals[None, :]
             c_transform_y = c_transform_vals.mean()
         penalty1 = self.xy_penalty(xy_xi_vals)
         critic_x = critic_vals[:batch_size].mean()
@@ -123,11 +124,11 @@ class QPWGAN():
         self.gen_optimizer.step()
 
         if return_sample:
-            return critic_loss, gen_loss.item(), gen_batch.detach() 
+            return critic_loss, gen_loss.item(), gen_batch.detach()
 
         return critic_loss, gen_loss.item()
 
-    def train(self, n_epoch: int=None, callbacks=None):
+    def train(self, n_epoch: int = None, callbacks=None):
         self.generator.train()
         self.critic.train()
 
@@ -152,11 +153,13 @@ class QPWGAN():
                 gen_loss_history.append(gen_loss)
                 critic_loss_history.append(critic_loss)
                 if self.verbose and it % 50 == 0:
-                    print(f'Iteration {it}, gen loss: {gen_loss:.3f}, critic loss: {critic_loss:.3f}')
+                    print(
+                        f'Iteration {it}, gen loss: {gen_loss:.3f}, critic loss: {critic_loss:.3f}')
 
             if self.verbose:
                 print(f'Epoch {epoch}, gen loss: {epoch_gen_loss:.3f}')
-                wandb.log({'gen loss': epoch_gen_loss, 'critic loss': epoch_critic_loss})
+                wandb.log({'gen loss': epoch_gen_loss,
+                           'critic loss': epoch_critic_loss})
 
             if callbacks is not None:
                 for callback in callbacks:
@@ -176,17 +179,19 @@ class QPWGAN():
                 if isinstance(data_batch, (list, tuple)):
                     data_batch = data_batch[0]
                 data_batch = data_batch.to(self.device)
-                critic_loss, gen_loss, gen_batch = self.iteration(data_batch, return_sample=True)
+                critic_loss, gen_loss, gen_batch = self.iteration(
+                    data_batch, return_sample=True)
                 epoch_gen_loss += gen_loss / len(self.trainloader)
                 epoch_critic_loss += gen_loss / len(self.trainloader)
 
-                W, _ = compute_wasserstein(target_sample, gen_batch, q=self.q, p=self.p)
+                W, _ = compute_wasserstein(
+                    target_sample, gen_batch, q=self.q, p=self.p)
                 epoch_w_loss += W.item()**self.p / len(self.trainloader)
             wass_history.append(epoch_w_loss)
             gen_loss_history.append(gen_loss)
             critic_loss_history.append(critic_loss)
             # TODO: bootstrapping (or smth) for wasserstein metric estimation
-            
+
             if iter_ % 10 == 0 and iter_ > 0:
                 if self.verbose:
                     print(
@@ -195,7 +200,8 @@ class QPWGAN():
                 _ = plt.figure()
                 sample = self.generator.sample(
                     batch_size=100, device=self.device).to('cpu').detach().numpy()
-                kernel = stats.gaussian_kde(np.unique(sample, axis=0).T) #reshape(2, -1))
+                kernel = stats.gaussian_kde(
+                    np.unique(sample, axis=0).T)  # reshape(2, -1))
 
                 delta = 0.02
                 x = np.arange(-1.2, 1.2, delta)
@@ -243,7 +249,6 @@ class QPWGAN():
                             label='original data', alpha=0.7)
                 target_sample = torch.Tensor(target_sample).to(self.device)
 
-                
                 # z = np.zeros((X.shape[0] * X.shape[1], 2))
                 # for i in range(X.shape[0]):
                 #     for j in range(X.shape[1]):
@@ -257,7 +262,7 @@ class QPWGAN():
                 CS = plt.contour(X, Y, output_real.reshape(
                     X.shape), levels=np.linspace(np.quantile(output_real, 0.75), output_real.max(), 10))
 
-                CB = plt.colorbar(CS, shrink=0.9)#, extend='both')
+                CB = plt.colorbar(CS, shrink=0.9)  # , extend='both')
                 plt.title(f'Critic values p={self.p} iteration {iter_}')
                 plt.legend()
                 plt.savefig(
@@ -265,7 +270,7 @@ class QPWGAN():
                         'dump',
                         f'gaussians_{iter_}_critic_p={self.p}.pdf'))
                 plt.close()
-        
+
         return gen_loss_history, wass_history
 
     @staticmethod

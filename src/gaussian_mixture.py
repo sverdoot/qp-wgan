@@ -52,7 +52,8 @@ def parse_arguments():
             30,
             50])
     parser.add_argument('--save_dir', type=str, default='figs')
-    parser.add_argument('--search_space', type=str, choices=['full', 'x'], default='x')
+    parser.add_argument('--search_space', type=str,
+                        choices=['full', 'x'], default='x')
     parser.add_argument('--reg_coef1', type=float, default=0.1)
     parser.add_argument('--reg_coef2', type=float, default=0.1)
     parser.add_argument('--seed', type=int, default=None)
@@ -85,16 +86,17 @@ def main(args):
                                     variance_vector=variances
                                     )
 
-    target_dataloader = DataLoader(torch.FloatTensor(target_sample), shuffle=True, batch_size=args.batch_size)
+    target_dataloader = DataLoader(torch.FloatTensor(
+        target_sample), shuffle=True, batch_size=args.batch_size)
 
     for i, p in enumerate(args.p):
         print("=" * 50)
         print(f"q {args.q} - p {p} metric")
 
         generator = Generator().to(device)
-        #generator.init_weights()
+        # generator.init_weights()
         critic = Critic().to(device)
-        #critic.init_weights()
+        # critic.init_weights()
         gen_optimizer = torch.optim.Adam(
             generator.parameters(), **optim_params)
         critic_optimizer = torch.optim.Adam(
@@ -113,7 +115,8 @@ def main(args):
                       reg_coef1=args.reg_coef1,
                       reg_coef2=args.reg_coef2,
                       )
-        gen_loss_history, wass_history = wgan.train_gaussian_mixture(args.n_epoch)
+        gen_loss_history, wass_history = wgan.train_gaussian_mixture(
+            args.n_epoch)
         sample = wgan.generator.sample(
             batch_size=100, device=device).to('cpu').detach().numpy()
 
