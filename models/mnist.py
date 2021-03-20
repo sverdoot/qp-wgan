@@ -90,26 +90,29 @@ def mnist_callback(**kw):
             Path(dump_dir, f'{wgan.q}_{wgan.p}_{wgan.n_critic_iter}_mnist_{epoch}epoch.pdf'))
         plt.close()
         wandb.log({"mnist_examples": [wandb.Image(i) for i in sample]})
-        
+
     def metric_callback(wgan, epoch, *args, **kwargs):
         if epoch == wgan.n_epoch - 1:
             dump_dir = kw.get('dump_dir', '../test')
             wgan.generator.eval()
             wgan.critic.eval()
-            
+
             samples_from_dataset = []
             for i_id, i in enumerate(trainloader):
-                if i_id > 50: # for not waiting too long
+                if i_id > 50:  # for not waiting too long
                     break
                 samples_from_dataset.append(i[0])
             samples_from_dataset = torch.stack(samples_from_dataset)
-            samples_from_dataset = samples_from_dataset.reshape(-1, samples_from_dataset.shape[2])
-            sample = wgan.generator.sample(2000, device=wgan.device).detach().cpu()
-            
+            samples_from_dataset = samples_from_dataset.reshape(
+                -1, samples_from_dataset.shape[2])
+            sample = wgan.generator.sample(
+                2000, device=wgan.device).detach().cpu()
+
             distances = closest_samples(samples_from_dataset, sample)
-            
-            json.dump(distances, Path(dump_dir, f'mnist_distances__{wgan.q}__{wgan.p}__critic_{wgan.n_critic_iter}__epoch_{epoch}.json').open('w'))
-            
+
+            json.dump(distances, Path(
+                dump_dir, f'mnist_distances__{wgan.q}__{wgan.p}__critic_{wgan.n_critic_iter}__epoch_{epoch}.json').open('w'))
+
     def save_callback(wgan, epoch, *args, **kwargs):
         if epoch == wgan.n_epoch - 1:
             dump_dir = kw.get('dump_dir', '../models')
@@ -121,7 +124,7 @@ def mnist_callback(**kw):
                 'generator_optimizer_state_dict': wgan.critic_optimizer.state_dict(),
                 'epoch': epoch
             }, Path(dump_dir, f'mnist_model__{wgan.q}__{wgan.p}__critic_{wgan.n_critic_iter}__epoch_{epoch}.pt'))
-        
+
     callbacks = [callback, metric_callback, save_callback]
     return callbacks
 

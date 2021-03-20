@@ -121,7 +121,8 @@ def main(args):
     gen_optimizer = optim.Adam(generator.parameters(), **optim_params)
     critic_optimizer = optim.Adam(critic.parameters(), **optim_params)
 
-    n_epoch = int(args.n_iter * len(trainloader) / args.batch_size / args.n_critic_iter)
+    n_epoch = int(args.n_iter * len(trainloader) /
+                  args.batch_size / args.n_critic_iter)
 
     wandb.watch(generator)
     wandb.watch(critic)

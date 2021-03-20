@@ -4,6 +4,7 @@ from matplotlib import pyplot as plt
 import seaborn as sns
 import argparse
 
+
 def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument('--folder_with_files', type=str, default='dump')
@@ -13,10 +14,10 @@ def parse_arguments():
 
 
 def main(args):
-    
+
     plt.figure(figsize=(14, 10))
     for i in Path(args.folder_with_files).iterdir():
-        if str(i).endswith('39.json'): # hardcoded
+        if str(i).endswith('39.json'):  # hardcoded
             data = json.load(i.open('r'))
             q, p, critic = str(i).split('__')[1:-1]
             q = float(q)
@@ -43,4 +44,3 @@ def main(args):
 if __name__ == '__main__':
     args = parse_arguments()
     main(args)
-
