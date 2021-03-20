@@ -20,7 +20,8 @@ python src/gaussian_mixture.py --n_epoch 601 --search_space full
 MNIST
 
 ```bash
-python src/main.py --task mnist --reg_coef1 0 --reg_coef2 0 --n_critic_iter 1 --search_space x
+bash bin/mnist.sh
+
 ```
 
 CIFAR10

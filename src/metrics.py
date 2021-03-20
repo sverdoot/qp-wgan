@@ -75,6 +75,6 @@ def inception_score(imgs: torch.Tensor,
     return np.mean(split_scores), np.std(split_scores)
 
 
-def closest_samples(generated: torch.Tensor, dataset: torch.Tensor) -> List[float]:
+def closest_samples(dataset: torch.Tensor, generated: torch.Tensor) -> List[float]:
     distances = torch.cdist(generated, dataset)
     return distances.min(0).values.tolist()
