@@ -22,3 +22,9 @@ MNIST
 ```bash
 python src/main.py --task mnist --reg_coef1 0 --reg_coef2 0 --n_critic_iter 1 --search_space x
 ```
+
+CIFAR10
+
+```bash
+bash bin/cifar10.sh
+```

@@ -83,17 +83,18 @@ def mnist_callback(**kw):
             ax.imshow(im_)
             ax.set_aspect('equal')
             ax.axis('off')
-        plt.savefig(Path(dump_dir, f'{wgan.q}_{wgan.p}_mnist_{epoch}epoch.pdf'))
+        plt.savefig(
+            Path(dump_dir, f'{wgan.q}_{wgan.p}_mnist_{epoch}epoch.pdf'))
         plt.close()
         wandb.log({"examples": [wandb.Image(i) for i in sample]})
 
     return callback
 
-        # data = train_dataset.data[:100]
-        # _, axs = plt.subplots(nrows=10, ncols=10, figsize=(15, 15))
-        # for ax, im in zip(axs.flat, data):
-        #     ax.imshow(im)
-        #     ax.set_aspect('equal')
-        #     ax.axis('off')
-        # plt.savefig(Path(dump_dir, f'mnist.pdf'))
-        # plt.close()
+    # data = train_dataset.data[:100]
+    # _, axs = plt.subplots(nrows=10, ncols=10, figsize=(15, 15))
+    # for ax, im in zip(axs.flat, data):
+    #     ax.imshow(im)
+    #     ax.set_aspect('equal')
+    #     ax.axis('off')
+    # plt.savefig(Path(dump_dir, f'mnist.pdf'))
+    # plt.close()
