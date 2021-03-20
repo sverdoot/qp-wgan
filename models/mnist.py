@@ -123,7 +123,7 @@ def mnist_callback(**kw):
             }, Path(dump_dir, f'mnist_model__{wgan.q}__{wgan.p}__critic_{wgan.n_critic_iter}__epoch_{epoch}.pt'))
         
     callbacks = [callback, metric_callback, save_callback]
-    return callback
+    return callbacks
 
     # data = train_dataset.data[:100]
     # _, axs = plt.subplots(nrows=10, ncols=10, figsize=(15, 15))
