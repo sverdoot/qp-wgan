@@ -36,8 +36,8 @@ def parse_arguments():
         default='mnist')
     parser.add_argument('--n_epoch', type=int, default=50)
     parser.add_argument('--n_iter', type=int, default=int(5e3))
-    parser.add_argument('-q', '--q', type=int, default=2)
-    parser.add_argument('-p', '--p', type=int, default=2)
+    parser.add_argument('-q', '--q', type=float, default=2)
+    parser.add_argument('-p', '--p', type=float, default=2)
     parser.add_argument('--n_critic_iter', type=int, default=1)
     parser.add_argument('-b', '--batch_size', type=int, default=64)
     parser.add_argument('-d', '--device', type=int, default=None)
@@ -57,6 +57,7 @@ def main(args):
 
     wandb.init(project='qp-wgan', entity='samokhinv')
     wandb.config.update(args)
+    wandb.run.name = f'{args.task}_q_{args.q}_p_{args.p}_critic_iter_{args.n_critic_iter}'
 
     if args.device is not None:
         device = torch.device(
@@ -123,6 +124,7 @@ def main(args):
 
     n_epoch = int(args.n_iter * len(trainloader) /
                   args.batch_size / args.n_critic_iter)
+#     n_epoch = args.n_epoch
 
     wandb.watch(generator)
     wandb.watch(critic)
@@ -148,3 +150,4 @@ def main(args):
 if __name__ == '__main__':
     args = parse_arguments()
     main(args)
+
