@@ -81,7 +81,7 @@ def cifar_callback(**kw):
         _, axs = plt.subplots(nrows=4, ncols=5, figsize=(10, 15))
         for ax, im in zip(axs.flat, sample):
             im_ = inv_normalize(im)
-            ax.imshow(torch.movedim(im_, 0, 2))
+            ax.imshow(im_.permute(1, 2, 0))
             ax.set_aspect('equal')
             ax.axis('off')
         plt.savefig(
