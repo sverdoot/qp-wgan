@@ -1,3 +1,4 @@
+import wandb
 import torch
 import numpy as np
 import argparse
@@ -43,7 +44,8 @@ def parse_arguments():
     parser.add_argument('--seed', type=int, default=None)
     parser.add_argument('--reg_coef1', type=float, default=0.1)
     parser.add_argument('--reg_coef2', type=float, default=0.1)
-    parser.add_argument('--search_space', type=str, choices=['full', 'x'], default='x')
+    parser.add_argument('--search_space', type=str,
+                        choices=['full', 'x'], default='x')
     parser.add_argument('--dump_dir', type=str, default=DUMP_DIR)
     parser.add_argument('--num_workers', type=int, default=0)
 
@@ -52,6 +54,10 @@ def parse_arguments():
 
 
 def main(args):
+
+    wandb.init(project='qp-wgan', entity='samokhinv')
+    wandb.config.update(args)
+
     if args.device is not None:
         device = torch.device(
             args.device if torch.cuda.is_available() else 'cpu')
@@ -63,83 +69,62 @@ def main(args):
 
     Path(args.dump_dir).mkdir(exist_ok=True)
 
+    norm_mean = 0.5  # 0.1307
+    norm_std = 0.5  # 0.3081
+
     if args.task == 'mnist':
-        transform = T.Compose([T.ToTensor(), T.Normalize((0.1307,), (0.3081,)), T.Lambda(lambda x: torch.flatten(x))])
+        transform = T.Compose(
+            [T.ToTensor(),
+             T.Normalize((norm_mean,), (norm_std,)),
+             T.Lambda(lambda x: torch.flatten(x))
+             ]
+        )
         inv_normalize = T.Normalize(
-            mean=[-0.1307/0.3081,],
-            std=[1/0.3081,]
+            mean=(-norm_mean/norm_std,),
+            std=(1/norm_std,)
         )
 
-        train_dataset = datasets.MNIST('data', train=True, download=True, transform=transform)
-        trainloader = DataLoader(train_dataset, shuffle=True, batch_size=args.batch_size, num_workers=args.num_workers)
+        train_dataset = datasets.MNIST(
+            'data', train=True, download=True, transform=transform)
+        trainloader = DataLoader(
+            train_dataset, shuffle=True, batch_size=args.batch_size, num_workers=args.num_workers)
         generator = mnist.Generator().to(device)
-        #generator.init_weights()
+        # generator.init_weights()
         critic = mnist.Critic().to(device)
-        #critic.init_weights()
+        # critic.init_weights()
 
-        def callback(wgan, epoch, *fargs, **fkwargs):
-            if epoch % 1 != 0:
-                return
-            sample = wgan.generator.sample(100, device=wgan.device)
-            sample = sample.reshape(-1, 28, 28)
-            sample = inv_normalize(sample).detach().cpu().numpy()
-            _, axs = plt.subplots(nrows=10, ncols=10, figsize=(15, 15))
-            #plt.title(f'({wgan.q}, {wgan.p})-WGAN')
-            for ax, im in zip(axs.flat, sample):
-                ax.imshow(im)
-                ax.set_aspect('equal')
-                ax.axis('off')
-            plt.savefig(Path(args.dump_dir, f'{wgan.q}_{wgan.p}_mnist_{epoch}epoch.pdf'))
-            plt.close()
-
-            data = train_dataset.data[:100]
-            _, axs = plt.subplots(nrows=10, ncols=10, figsize=(15, 15))
-            for ax, im in zip(axs.flat, data):
-                ax.imshow(im)
-                ax.set_aspect('equal')
-                ax.axis('off')
-            plt.savefig(Path(args.dump_dir, f'mnist.pdf'))
-            plt.close()
-
-        callbacks = callback
+        callbacks = mnist.mnist_callback(
+            inv_normalize=inv_normalize, dump_dir=args.dump_dir)
 
     elif args.task == 'cifar10':
-        transform = T.Compose([T.ToTensor(), T.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-        inv_normalize = T.Normalize(
-            mean=[-1.,-1.,-1.],
-            std=[1/0.5,1/0.5,1/0.5]
+        transform = T.Compose(
+            [T.ToTensor(),
+             T.Normalize(
+                 (norm_mean,),
+                 (norm_std,))
+             ]
         )
-        train_dataset = datasets.CIFAR10(DATA_DIR, train=True, transform=transform, download=True)
-        trainloader = DataLoader(train_dataset, shuffle=True, batch_size=args.batch_size, num_workers=args.num_workers)
+        inv_normalize = T.Normalize(
+            mean=(-norm_mean/norm_std,),
+            std=(1/norm_std,)
+        )
+        train_dataset = datasets.CIFAR10(
+            DATA_DIR, train=True, transform=transform, download=True)
+        trainloader = DataLoader(
+            train_dataset, shuffle=True, batch_size=args.batch_size, num_workers=args.num_workers)
         generator = cifar10.Generator().to(device)
         critic = cifar10.Critic().to(device)
 
-        def imshow(img, ax):
-            img = img / 2 + 0.5     # unnormalize
-            npimg = img.detach().cpu().numpy()
-            ax.imshow(np.transpose(npimg, (1, 2, 0)))
-
-        def callback(wgan, epoch, *fargs, **fkwargs):
-            if epoch % 1 != 0:
-                return
-            sample = wgan.generator.sample(20, device=wgan.device)
-            sample = sample.reshape(-1, 3, 32, 32)
-            #sample = np.vstack([inv_normalize(x).detach().cpu().numpy() for x in sample])
-            _, axs = plt.subplots(nrows=4, ncols=5, figsize=(15, 10))
-            for ax, im in zip(axs.flat, sample):
-                imshow(im, ax)
-                ax.set_aspect('equal')
-                ax.axis('off')
-            plt.savefig(Path(args.dump_dir, f'{wgan.q}_{wgan.p}_cifar10_{epoch}epoch.pdf'))
-            plt.close()
-
-        callbacks = callback
+        callbacks = cifar10.cifar_callback(
+            inv_normalize=inv_normalize, dump_dir=args.dump_dir)
 
     gen_optimizer = optim.Adam(generator.parameters(), **optim_params)
     critic_optimizer = optim.Adam(critic.parameters(), **optim_params)
 
     n_epoch = int(args.n_iter * len(trainloader) / args.batch_size / args.n_critic_iter)
 
+    wandb.watch(generator)
+    wandb.watch(critic)
     wgan = QPWGAN(generator,
                   critic,
                   trainloader,
