@@ -1,12 +1,6 @@
 import torch
-import wandb
 from torch import nn
-from torch.nn import functional as F
 from src.utils import Reshape
-import sys
-
-import matplotlib.pyplot as plt
-from pathlib import Path
 
 
 class Generator(nn.Module):
@@ -67,26 +61,3 @@ class Critic(nn.Module):
     def forward(self, x):
         out = self.net(x).squeeze(1)
         return out
-
-
-def cifar_callback(**kw):
-    dump_dir = kw.get('dump_dir', '../test')
-    inv_normalize = kw.get('inv_normalize', lambda x: x)
-
-    def callback(wgan, epoch, *fargs, **fkwargs):
-        if epoch % 1 != 0:
-            return
-        sample = wgan.generator.sample(20, device=wgan.device)
-        sample = sample.reshape(-1, 3, 32, 32).detach().cpu()
-        _, axs = plt.subplots(nrows=4, ncols=5, figsize=(10, 15))
-        for ax, im in zip(axs.flat, sample):
-            im_ = inv_normalize(im)
-            ax.imshow(im_.permute(1, 2, 0))
-            ax.set_aspect('equal')
-            ax.axis('off')
-        plt.savefig(
-            Path(dump_dir, f'{wgan.q}_{wgan.p}_cifar10_{epoch}epoch.pdf'))
-        plt.close()
-        wandb.log({"examples": [wandb.Image(i) for i in sample]})
-
-    return callback
