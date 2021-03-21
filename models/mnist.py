@@ -98,8 +98,8 @@ def mnist_callback(**kw):
             wgan.critic.eval()
 
             samples_from_dataset = []
-            for i_id, i in enumerate(trainloader):
-                if i_id > 50:  # for not waiting too long
+            for i_id, i in enumerate(wgan.trainloader):
+                if i_id > 100:  # for not waiting too long
                     break
                 samples_from_dataset.append(i[0])
             samples_from_dataset = torch.stack(samples_from_dataset)
