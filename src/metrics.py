@@ -1,6 +1,3 @@
-# TODO: Inception score, Fresche score for Cifar10, distance to nearest for MNIST
-
-import tqdm
 import numpy as np
 import torch
 from torch import nn
@@ -18,7 +15,7 @@ from scipy.stats import entropy
 
 def inception_score(imgs: torch.Tensor,
                     device: torch.device = torch.device('cuda'),
-                    batch_size: int = 128,
+                    batch_size: int = 64,
                     resize=False,
                     splits=1
                     ) -> Tuple[float, float]:
@@ -33,7 +30,6 @@ def inception_score(imgs: torch.Tensor,
     splits -- number of splits
     """
     N = imgs.shape[0]
-#     N = len(imgs)
 
     assert batch_size > 0
     assert N > batch_size
@@ -47,7 +43,7 @@ def inception_score(imgs: torch.Tensor,
     inception_model = inception_v3(
         pretrained=True, transform_input=False).type(dtype)
     inception_model.eval()
-    up = nn.Upsample(size=(299, 299), mode='bilinear').type(dtype)
+    up = nn.Upsample(size=(299, 299), mode='bilinear', align_corners=False).type(dtype)
 
     def get_pred(x):
         if resize:
@@ -63,7 +59,8 @@ def inception_score(imgs: torch.Tensor,
         batch_size_i = batch.size()[0]
 
         preds[i*batch_size:i*batch_size + batch_size_i] = get_pred(batchv)
-
+    
+    del inception_model
     # Now compute the mean kl-div
     split_scores = []
 
@@ -80,7 +77,7 @@ def inception_score(imgs: torch.Tensor,
 
 
 def closest_samples(dataset: torch.Tensor, generated: torch.Tensor) -> List[float]:
-    distances = torch.cdist(generated, dataset)
+    distances = torch.cdist(dataset, generated)
     return distances.min(0).values.tolist()
 
 
@@ -111,9 +108,9 @@ def get_activations(model, images: torch.Tensor, batch_size: int = 200, dims: in
 
     start_idx = 0
 
-    for batch in tqdm.tqdm(dataloader):
+    for batch in dataloader:
+        
         batch = batch[0].to(device)
-
         with torch.no_grad():
             pred = model(batch)[0]
 
@@ -139,7 +136,7 @@ def compute_statistics_of_image(model, images: torch.Tensor, batch_size: int = 2
     return mu, sigma
 
 
-def calculate_fid_score(images_a: torch.Tensor, images_b: torch.Tensor, batch_size: int = 200, device: torch.device = torch.device('cuda'), dims: int = 2048) -> float:
+def calculate_fid_score(images_a: torch.Tensor, images_b: torch.Tensor, batch_size: int = 64, device: torch.device = torch.device('cuda'), dims: int = 2048) -> float:
     """Calculates the FID of two paths"""
     block_idx = InceptionV3.BLOCK_INDEX_BY_DIM[dims]
 
@@ -149,6 +146,8 @@ def calculate_fid_score(images_a: torch.Tensor, images_b: torch.Tensor, batch_si
         model, images_a, batch_size, dims, device)
     m2, s2 = compute_statistics_of_image(
         model, images_b, batch_size, dims, device)
+    
+    del model
 
     fid_value = calculate_frechet_distance(m1, s1, m2, s2)
 

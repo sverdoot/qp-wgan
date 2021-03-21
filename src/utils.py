@@ -13,6 +13,7 @@ DUMP_DIR = 'dump'
 DATA_DIR = 'data'
 FIGS_DIR = 'figs'
 CHECKS_DIR = 'checkpoints'
+NUMBER_OF_GENERATING_SAMPLES = 1000
 
 
 def random_seed(seed):
@@ -51,7 +52,7 @@ def nearest_distance_callback(wgan, epoch, *args, **kwargs):
                 -1, samples_from_dataset.shape[2])
             
         sample = wgan.generator.sample(
-            1000, device=wgan.device).detach().cpu()
+            NUMBER_OF_GENERATING_SAMPLES, device=wgan.device).detach().cpu()
         
         if wgan.task == 'cifar10':
             sample = sample.reshape(sample.shape[0], -1)
@@ -74,7 +75,7 @@ def inception_callback(wgan, epoch, *args, **kwargs):
         wgan.critic.eval()
 
         sample = wgan.generator.sample(
-            2000, device=wgan.device).detach().cpu()
+            NUMBER_OF_GENERATING_SAMPLES, device=wgan.device).detach().cpu()
 
         mu, std = inception_score(sample, splits=5, resize=True)
         result = {'mu': mu, 'std': std}
@@ -99,10 +100,15 @@ def fidscore_callback(wgan, epoch, *args, **kwargs):
                 break
             samples_from_dataset.append(i[0])
         samples_from_dataset = torch.stack(samples_from_dataset)
-
+        if wgan.task == 'cifar10':
+            samples_from_dataset = samples_from_dataset.reshape(
+                samples_from_dataset.shape[0] * samples_from_dataset.shape[1], 
+                samples_from_dataset.shape[2],
+                samples_from_dataset.shape[3],
+                samples_from_dataset.shape[4]
+            )
         sample = wgan.generator.sample(
-            2000, device=wgan.device).detach().cpu()
-
+            NUMBER_OF_GENERATING_SAMPLES, device=wgan.device).detach().cpu()
         fid_score = calculate_fid_score(samples_from_dataset, sample)
         json.dump({'fid-score': fid_score}, Path(
             dump_dir,
@@ -150,8 +156,9 @@ def plotting_callback(wgan, epoch, *args, **kwargs):
 
     sample = wgan.generator.sample(16, device=wgan.device)
     sample = sample.reshape(-1, n_channels, height, width).detach().cpu()
-    _, axs = plt.subplots(nrows=4, ncols=4, figsize=(15, 15))
-    plt.title(f'({wgan.q}, {wgan.p})-WGAN')
+    f, axs = plt.subplots(nrows=4, ncols=4, figsize=(15, 15))
+    f.suptitle(f'({wgan.q}, {wgan.p})-WGAN', fontsize=25)
+#     plt.title(f'({wgan.q}, {wgan.p})-WGAN')
     for ax, im in zip(axs.flat, sample):
         im_ = inv_normalize(im)
         ax.imshow(im_.permute(1, 2, 0))
