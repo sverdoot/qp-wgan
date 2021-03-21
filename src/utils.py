@@ -6,7 +6,7 @@ import torch.nn as nn
 import numpy as np
 import wandb
 #import random
-from metrics import closest_samples
+from metrics import closest_samples, inception_score, calculate_fid_score
 from matplotlib import pyplot as plt
 
 DUMP_DIR = 'dump'
@@ -55,6 +55,52 @@ def nearest_distance_callback(wgan, epoch, *args, **kwargs):
             f'{wgan.task}_distances__{wgan.q}__{wgan.p}__critic_{wgan.n_critic_iter}__epoch_{epoch}.json').open('w')
         )
 
+    return
+
+
+def inception_callback(wgan, epoch, *args, **kwargs):
+    if epoch == wgan.n_epoch - 1:
+
+        dump_dir = kwargs.get('dump_dir', '../test')
+        wgan.generator.eval()
+        wgan.critic.eval()
+
+        sample = wgan.generator.sample(
+            2000, device=wgan.device).detach().cpu()
+
+        mu, std = inception_score(sample, splits=5)
+        result = {'mu': mu, 'std': std}
+        json.dump(result, Path(
+            dump_dir,
+            f'{wgan.task}_inception_score__{wgan.q}__{wgan.p}__critic_{wgan.n_critic_iter}__epoch_{epoch}.json').open('w')
+        )
+        wandb.log({'inception score': mu})
+    return
+
+
+def fidscore_callback(wgan, epoch, *args, **kwargs):
+    if epoch == wgan.n_epoch - 1:
+
+        dump_dir = kwargs.get('dump_dir', '../test')
+        wgan.generator.eval()
+        wgan.critic.eval()
+
+        samples_from_dataset = []
+        for i_id, i in enumerate(wgan.trainloader):
+            if i_id > 100:  # for not waiting too long
+                break
+            samples_from_dataset.append(i[0])
+        samples_from_dataset = torch.stack(samples_from_dataset)
+
+        sample = wgan.generator.sample(
+            2000, device=wgan.device).detach().cpu()
+
+        fid_score = calculate_fid_score(samples_from_dataset, sample)
+        json.dump({'fid-score': fid_score}, Path(
+            dump_dir,
+            f'{wgan.task}_fid_score__{wgan.q}__{wgan.p}__critic_{wgan.n_critic_iter}__epoch_{epoch}.json').open('w')
+        )
+        wandb.log({'fid-score': fid_score})
     return
 
 

@@ -139,7 +139,7 @@ def compute_statistics_of_image(model, images: torch.Tensor, batch_size: int = 2
     return mu, sigma
 
 
-def calculate_fid_given_paths(images_a: torch.Tensor, images_b: torch.Tensor, batch_size: int = 200, device: torch.device = torch.device('cuda'), dims: int = 2048) -> float:
+def calculate_fid_score(images_a: torch.Tensor, images_b: torch.Tensor, batch_size: int = 200, device: torch.device = torch.device('cuda'), dims: int = 2048) -> float:
     """Calculates the FID of two paths"""
     block_idx = InceptionV3.BLOCK_INDEX_BY_DIM[dims]
 

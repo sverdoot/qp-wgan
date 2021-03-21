@@ -19,7 +19,7 @@ from utils import random_seed, DUMP_DIR, DATA_DIR
 # fix for downloading MNIST
 from six.moves import urllib
 
-from utils import plotting_callback, save_callback, nearest_distance_callback
+from utils import plotting_callback, save_callback, nearest_distance_callback, inception_callback, fidscore_callback
 
 opener = urllib.request.build_opener()
 opener.addheaders = [('User-agent', 'Mozilla/5.0')]
@@ -122,7 +122,7 @@ def main(args):
         map(
             lambda f: partial(f, dump_dir=args.dump_dir,
                               inv_normalize=inv_normalize),
-            (plotting_callback, nearest_distance_callback, save_callback)
+            (plotting_callback, nearest_distance_callback, save_callback, inception_callback, fidscore_callback)
         )
     )
 
