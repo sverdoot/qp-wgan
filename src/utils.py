@@ -43,10 +43,18 @@ def nearest_distance_callback(wgan, epoch, *args, **kwargs):
                 break
             samples_from_dataset.append(i[0])
         samples_from_dataset = torch.stack(samples_from_dataset)
-        samples_from_dataset = samples_from_dataset.reshape(
-            -1, samples_from_dataset.shape[2])
+        if wgan.task == 'cifar10':
+            samples_from_dataset = samples_from_dataset.reshape(
+                samples_from_dataset.shape[0] * samples_from_dataset.shape[1], -1)
+        else:
+            samples_from_dataset = samples_from_dataset.reshape(
+                -1, samples_from_dataset.shape[2])
+            
         sample = wgan.generator.sample(
-            2000, device=wgan.device).detach().cpu()
+            1000, device=wgan.device).detach().cpu()
+        
+        if wgan.task == 'cifar10':
+            sample = sample.reshape(sample.shape[0], -1)
 
         distances = closest_samples(samples_from_dataset, sample)
 
@@ -68,7 +76,7 @@ def inception_callback(wgan, epoch, *args, **kwargs):
         sample = wgan.generator.sample(
             2000, device=wgan.device).detach().cpu()
 
-        mu, std = inception_score(sample, splits=5)
+        mu, std = inception_score(sample, splits=5, resize=True)
         result = {'mu': mu, 'std': std}
         json.dump(result, Path(
             dump_dir,
