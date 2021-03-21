@@ -124,7 +124,7 @@ def plotting_callback(wgan, epoch, *args, **kwargs):
 
     task = wgan.task
 
-    if task == 'cifar':
+    if task == 'cifar10':
         height = width = 32
         n_channels = 3
     elif task == 'mnist':
