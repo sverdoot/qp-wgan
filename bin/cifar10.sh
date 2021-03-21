@@ -15,7 +15,7 @@ for p in 1 2; do
             echo q: ${q} p: ${p} critic iterations: ${n_critic} 
             
             PYTHONPATH=. python src/main.py \
-                --task cifar10101010101010101010 \
+                --task cifar10 \
                 --q ${q} \
                 --p ${p} \
                 --n_critic_iter ${n_critic} \
