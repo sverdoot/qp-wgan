@@ -74,7 +74,7 @@ def inception_callback(wgan, epoch, *args, **kwargs):
             dump_dir,
             f'{wgan.task}_inception_score__{wgan.q}__{wgan.p}__critic_{wgan.n_critic_iter}__epoch_{epoch}.json').open('w')
         )
-        wandb.log({'inception score': mu})
+        wandb.run.summary['inception score'] = mu
     return
 
 
@@ -100,7 +100,7 @@ def fidscore_callback(wgan, epoch, *args, **kwargs):
             dump_dir,
             f'{wgan.task}_fid_score__{wgan.q}__{wgan.p}__critic_{wgan.n_critic_iter}__epoch_{epoch}.json').open('w')
         )
-        wandb.log({'fid-score': fid_score})
+        wandb.run.summary['fid-score'] = fid_score
     return
 
 
@@ -140,9 +140,9 @@ def plotting_callback(wgan, epoch, *args, **kwargs):
     if epoch % 1 != 0:
         return
 
-    sample = wgan.generator.sample(100, device=wgan.device)
+    sample = wgan.generator.sample(16, device=wgan.device)
     sample = sample.reshape(-1, n_channels, height, width).detach().cpu()
-    _, axs = plt.subplots(nrows=10, ncols=10, figsize=(15, 15))
+    _, axs = plt.subplots(nrows=4, ncols=4, figsize=(15, 15))
     plt.title(f'({wgan.q}, {wgan.p})-WGAN')
     for ax, im in zip(axs.flat, sample):
         im_ = inv_normalize(im)
@@ -152,6 +152,6 @@ def plotting_callback(wgan, epoch, *args, **kwargs):
     plt.savefig(Path(
         dump_dir, f'{wgan.task}_{wgan.q}_{wgan.p}_{wgan.n_critic_iter}_{task}_{epoch}epoch.pdf'))
     plt.close()
-    wandb.log({f"{task}_examples": [wandb.Image(i) for i in sample]})
+    wandb.log({f"{task}_examples": [wandb.Image(inv_normalize(im)) for im in sample[:5]]})
 
     return
