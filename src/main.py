@@ -40,7 +40,7 @@ def parse_arguments():
             'discrete'],
         default='mnist')
     parser.add_argument('--n_epoch', type=int, default=50)
-    parser.add_argument('--n_iter', type=int, default=int(5e3))
+    parser.add_argument('--n_iter', type=int, default=int(5e4))
     parser.add_argument('-q', '--q', type=float, default=2)
     parser.add_argument('-p', '--p', type=float, default=2)
     parser.add_argument('--n_critic_iter', type=int, default=1)
@@ -129,8 +129,7 @@ def main(args):
     gen_optimizer = optim.Adam(generator.parameters(), **optim_params)
     critic_optimizer = optim.Adam(critic.parameters(), **optim_params)
 
-    n_epoch = int(args.n_iter * len(trainloader) /
-                  args.batch_size / args.n_critic_iter)
+    n_epoch = int(args.n_iter / len(trainloader) / args.n_critic_iter)
 #     n_epoch = args.n_epoch
 
     wandb.watch(generator)
