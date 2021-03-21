@@ -1,3 +1,5 @@
+from functools import partial
+
 import wandb
 import torch
 import numpy as np
@@ -16,6 +18,9 @@ from utils import random_seed, DUMP_DIR, DATA_DIR
 
 # fix for downloading MNIST
 from six.moves import urllib
+
+from utils import plotting_callback, save_callback, metric_callback
+
 opener = urllib.request.build_opener()
 opener.addheaders = [('User-agent', 'Mozilla/5.0')]
 urllib.request.install_opener(opener)
@@ -94,9 +99,6 @@ def main(args):
         critic = mnist.Critic().to(device)
         # critic.init_weights()
 
-        callbacks = mnist.mnist_callback(
-            inv_normalize=inv_normalize, dump_dir=args.dump_dir)
-
     elif args.task == 'cifar10':
         transform = T.Compose(
             [T.ToTensor(),
@@ -116,8 +118,12 @@ def main(args):
         generator = cifar10.Generator().to(device)
         critic = cifar10.Critic().to(device)
 
-        callbacks = cifar10.cifar_callback(
-            inv_normalize=inv_normalize, dump_dir=args.dump_dir)
+    callbacks = list(
+        map(
+            lambda f: partial(f, dump_dir=args.dump_dir, inv_normalize=inv_normalize),
+            (plotting_callback, metric_callback, save_callback)
+        )
+    )
 
     gen_optimizer = optim.Adam(generator.parameters(), **optim_params)
     critic_optimizer = optim.Adam(critic.parameters(), **optim_params)
@@ -141,6 +147,7 @@ def main(args):
                   verbose=True,
                   reg_coef1=args.reg_coef1,
                   reg_coef2=args.reg_coef2,
+                  task=args.task,  # for logging purposes
                   device=device
                   )
 
