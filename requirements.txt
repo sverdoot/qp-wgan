@@ -5,3 +5,4 @@ cython
 matplotlib
 POT
 wandb
+fid-score

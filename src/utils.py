@@ -30,7 +30,7 @@ class Reshape(nn.Module):
         return x.view(-1, *self.shape)
 
 
-def metric_callback(wgan, epoch, *args, **kwargs):
+def nearest_distance_callback(wgan, epoch, *args, **kwargs):
     if epoch == wgan.n_epoch - 1:
 
         dump_dir = kwargs.get('dump_dir', '../test')
@@ -53,7 +53,7 @@ def metric_callback(wgan, epoch, *args, **kwargs):
         json.dump(distances, Path(
             dump_dir,
             f'{wgan.task}_distances__{wgan.q}__{wgan.p}__critic_{wgan.n_critic_iter}__epoch_{epoch}.json').open('w')
-                  )
+        )
 
     return
 
@@ -85,7 +85,8 @@ def plotting_callback(wgan, epoch, *args, **kwargs):
         height = width = 28
         n_channels = 1
     else:
-        raise NotImplementedError(f"Plotting for task {wgan.task} hasn't been implemented yet.")
+        raise NotImplementedError(
+            f"Plotting for task {wgan.task} hasn't been implemented yet.")
 
     wgan.generator.eval()
     wgan.critic.eval()
@@ -102,7 +103,8 @@ def plotting_callback(wgan, epoch, *args, **kwargs):
         ax.imshow(im_.permute(1, 2, 0))
         ax.set_aspect('equal')
         ax.axis('off')
-    plt.savefig(Path(dump_dir, f'{wgan.q}_{wgan.p}_{wgan.n_critic_iter}_{task}_{epoch}epoch.pdf'))
+    plt.savefig(Path(
+        dump_dir, f'{wgan.task}_{wgan.q}_{wgan.p}_{wgan.n_critic_iter}_{task}_{epoch}epoch.pdf'))
     plt.close()
     wandb.log({f"{task}_examples": [wandb.Image(i) for i in sample]})
 
