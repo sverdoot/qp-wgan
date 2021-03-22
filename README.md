@@ -34,3 +34,33 @@ CIFAR10
 ```bash
 bash bin/cifar10.sh
 ```
+
+CIFAR10 Progress
+
+<table style="width:100%; table-layout:fixed;">
+  <tr>
+    <td><img width="480px" src="figs/gif/cifar_1_1_1.gif"></td>
+    <td><img width="480px" src="figs/gif/cifar_1_1_5.gif"></td>
+  </tr>
+  <tr>
+    <td>q=1, p=1, critic iters = 1</td>
+    <td>q=1, p=1, critic iters = 5</td>
+  </tr>
+    <tr>
+    <td><img width="480px" src="figs/gif/cifar_1_2_1.gif"></td>
+    <td><img width="480px" src="figs/gif/cifar_1_2_5.gif"></td>
+  </tr>
+  <tr>
+    <td>q=1, p=2, critic iters = 1</td>
+    <td>q=1, p=2, critic iters = 5</td>
+  </tr>
+    <tr>
+    <td><img width="480px" src="figs/gif/cifar_2_2_1.gif"></td>
+    <td><img width="480px" src="figs/gif/cifar_2_2_5.gif"></td>
+  </tr>
+  <tr>
+    <td>q=2, p=2, critic iters = 1</td>
+    <td>q=2, p=2, critic iters = 5</td>
+  </tr>
+
+</table>

@@ -93,7 +93,7 @@ def main(args):
         train_dataset = datasets.MNIST(
             'data', train=True, download=True, transform=transform)
         trainloader = DataLoader(
-            train_dataset, shuffle=True, batch_size=args.batch_size, num_workers=args.num_workers)
+            train_dataset, shuffle=True, batch_size=args.batch_size, num_workers=args.num_workers, pin_memory=True)
         generator = mnist.Generator().to(device)
         # generator.init_weights()
         critic = mnist.Critic().to(device)
@@ -114,7 +114,7 @@ def main(args):
         train_dataset = datasets.CIFAR10(
             DATA_DIR, train=True, transform=transform, download=True)
         trainloader = DataLoader(
-            train_dataset, shuffle=True, batch_size=args.batch_size, num_workers=args.num_workers)
+            train_dataset, shuffle=True, batch_size=args.batch_size, num_workers=args.num_workers, pin_memory=True)
         generator = cifar10.Generator().to(device)
         critic = cifar10.Critic().to(device)
 
