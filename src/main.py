@@ -48,6 +48,7 @@ def parse_arguments():
                         choices=['full', 'x'], default='x')
     parser.add_argument('--dump_dir', type=str, default=DUMP_DIR)
     parser.add_argument('--num_workers', type=int, default=0)
+    parser.add_argument('--wandb_entity', type=str, default='samokhinv')
 
     args = parser.parse_args()
     return args
@@ -55,7 +56,7 @@ def parse_arguments():
 
 def main(args):
 
-    wandb.init(project='qp-wgan', entity='samokhinv')
+    wandb.init(project='qp-wgan', entity=args.wandb_entity)
     wandb.config.update(args)
 
     if args.device is not None:
@@ -121,7 +122,7 @@ def main(args):
     gen_optimizer = optim.Adam(generator.parameters(), **optim_params)
     critic_optimizer = optim.Adam(critic.parameters(), **optim_params)
 
-    n_epoch = int(args.n_iter * len(trainloader) / args.batch_size / args.n_critic_iter)
+    n_epoch = int(args.n_iter / (len(trainloader) / args.batch_size) / args.n_critic_iter)
 
     wandb.watch(generator)
     wandb.watch(critic)
