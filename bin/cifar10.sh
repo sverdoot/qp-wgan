@@ -8,8 +8,8 @@ REG_COEF_2=10
 DATE=$(date +%H%M%S-%d%m)
 
 
-for p in 1 2; do
-    for q in 1 2; do
+for q in 1 2; do
+    for p in 1 2; do
         for n_critic in 1 5; do
         
             echo q: ${q} p: ${p} critic iterations: ${n_critic} 
@@ -27,3 +27,6 @@ for p in 1 2; do
         done
     done
 done
+
+
+

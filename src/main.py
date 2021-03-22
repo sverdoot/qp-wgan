@@ -1,3 +1,5 @@
+from functools import partial
+
 import wandb
 import torch
 import numpy as np
@@ -16,6 +18,9 @@ from utils import random_seed, DUMP_DIR, DATA_DIR
 
 # fix for downloading MNIST
 from six.moves import urllib
+
+from utils import plotting_callback, save_callback, nearest_distance_callback, inception_callback, fidscore_callback
+
 opener = urllib.request.build_opener()
 opener.addheaders = [('User-agent', 'Mozilla/5.0')]
 urllib.request.install_opener(opener)
@@ -35,9 +40,9 @@ def parse_arguments():
             'discrete'],
         default='mnist')
     parser.add_argument('--n_epoch', type=int, default=50)
-    parser.add_argument('--n_iter', type=int, default=int(5e3))
-    parser.add_argument('-q', '--q', type=int, default=2)
-    parser.add_argument('-p', '--p', type=int, default=2)
+    parser.add_argument('--n_iter', type=int, default=int(5e4))
+    parser.add_argument('-q', '--q', type=float, default=2)
+    parser.add_argument('-p', '--p', type=float, default=2)
     parser.add_argument('--n_critic_iter', type=int, default=1)
     parser.add_argument('-b', '--batch_size', type=int, default=64)
     parser.add_argument('-d', '--device', type=int, default=None)
@@ -58,6 +63,7 @@ def main(args):
 
     wandb.init(project='qp-wgan', entity=args.wandb_entity)
     wandb.config.update(args)
+    wandb.run.name = f'{args.task}_q_{args.q}_p_{args.p}_critic_iter_{args.n_critic_iter}'
 
     if args.device is not None:
         device = torch.device(
@@ -94,9 +100,6 @@ def main(args):
         critic = mnist.Critic().to(device)
         # critic.init_weights()
 
-        callbacks = mnist.mnist_callback(
-            inv_normalize=inv_normalize, dump_dir=args.dump_dir)
-
     elif args.task == 'cifar10':
         transform = T.Compose(
             [T.ToTensor(),
@@ -116,13 +119,19 @@ def main(args):
         generator = cifar10.Generator().to(device)
         critic = cifar10.Critic().to(device)
 
-        callbacks = cifar10.cifar_callback(
-            inv_normalize=inv_normalize, dump_dir=args.dump_dir)
+    callbacks = list(
+        map(
+            lambda f: partial(f, dump_dir=args.dump_dir,
+                              inv_normalize=inv_normalize),
+            (plotting_callback, nearest_distance_callback, save_callback, inception_callback, fidscore_callback)
+        )
+    )
 
     gen_optimizer = optim.Adam(generator.parameters(), **optim_params)
     critic_optimizer = optim.Adam(critic.parameters(), **optim_params)
 
-    n_epoch = int(args.n_iter / (len(trainloader) / args.batch_size) / args.n_critic_iter)
+    n_epoch = int(args.n_iter / len(trainloader) / args.n_critic_iter)
+#     n_epoch = args.n_epoch
 
     wandb.watch(generator)
     wandb.watch(critic)
@@ -139,6 +148,7 @@ def main(args):
                   verbose=True,
                   reg_coef1=args.reg_coef1,
                   reg_coef2=args.reg_coef2,
+                  task=args.task,  # for logging purposes
                   device=device
                   )
 

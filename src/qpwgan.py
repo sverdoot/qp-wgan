@@ -31,6 +31,7 @@ class QPWGAN():
         self.reg_coef1 = kwargs.get('reg_coef1', 0.1)
         self.reg_coef2 = kwargs.get('reg_coef2', 0.1)
         self.search_space = kwargs.get('search_space', 'x')
+        self.task = kwargs.get('task', 'unknown')
 
         assert self.search_space == 'x' or self.search_space == 'full'
 
@@ -182,7 +183,7 @@ class QPWGAN():
                 critic_loss, gen_loss, gen_batch = self.iteration(
                     data_batch, return_sample=True)
                 epoch_gen_loss += gen_loss / len(self.trainloader)
-                epoch_critic_loss += gen_loss / len(self.trainloader)
+                epoch_critic_loss += critic_loss / len(self.trainloader)
 
                 W, _ = compute_wasserstein(
                     target_sample, gen_batch, q=self.q, p=self.p)

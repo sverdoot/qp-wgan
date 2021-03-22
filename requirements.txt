@@ -1,4 +1,8 @@
 torch
 torchvision
+numpy
+cython
+matplotlib
 POT
 wandb
+fid-score

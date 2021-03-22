@@ -5,6 +5,11 @@ pip install -r requirements.txt
 pip install -e .
 ```
 
+To use wandb tracking, do in advance
+```bash
+wandb login
+```
+
 Optimization of Wasserstein metric on discrete measure
 
 ```bash
@@ -20,7 +25,8 @@ python src/gaussian_mixture.py --n_epoch 601 --search_space full
 MNIST
 
 ```bash
-python src/main.py --task mnist --reg_coef1 0 --reg_coef2 0 --n_critic_iter 1 --search_space x
+bash bin/mnist.sh
+
 ```
 
 CIFAR10
