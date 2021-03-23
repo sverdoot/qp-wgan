@@ -2,6 +2,40 @@
 
 This repository contains Pytorch implementation of a method and experiments from the paper [(q,p)-Wasserstein GANs: Comparing Ground Metrics for Wasserstein GANs](https://arxiv.org/abs/1902.03642).
 
+- [(q,p)-Wasserstein GANs](#qp-wasserstein-gans)
+    - [Repository structure](#repository-structure)
+    - [Installation](#installation)
+    - [Usage](#usage)
+    - [Some results](#some-results)
+
+### Repository structure
+
+.
+├── bin
+│   ├── cifar10.sh
+│   └── mnist.sh
+├── data
+├── figs
+│   └── gif
+├── models
+│   ├── __init__.py
+│   ├── cifar10.py
+│   ├── gaussian_model.py
+│   └── mnist.py
+├── src
+│   ├── __init__.py
+│   ├── main.py
+│   ├── qpwgan.py
+│   ├── discrete_measures.py
+│   ├── gaussian_mixture.py
+│   ├── metrics.py
+│   ├── plot_nearest_distance.py
+│   └── utils.py
+├── README.md
+├── requirements.txt
+└── setup.py
+
+
 ### Installation
 
 ```bash
@@ -25,7 +59,7 @@ python src/discrete_measures.py
 Approximating a Gaussian mixture distribution:
 
 ```bash
-python3 src/gaussian_mixture.py  --n_epoch 601  --search_space full --n_critic_iter 2 --reg_coef1 0.1 --reg_coef2 1 --batch_size 64
+python src/gaussian_mixture.py  --n_epoch 601  --search_space full --n_critic_iter 2 --reg_coef1 0.1 --reg_coef2 1 --batch_size 64
 ```
 
 MNIST
