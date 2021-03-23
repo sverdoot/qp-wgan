@@ -6,7 +6,7 @@ from typing import List
 
 class Generator(nn.Module):
     def __init__(self,
-                 layers_dim: List[int] = [3, 128, 128, 2],
+                 layers_dim: List[int] = [2, 128, 128, 2],
                  non_linear: nn.Module = nn.ReLU(),
                  output_non_linear: nn.Module = nn.ReLU()):
         super(Generator, self).__init__()

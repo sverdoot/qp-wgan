@@ -53,6 +53,7 @@ def parse_arguments():
                         choices=['full', 'x'], default='x')
     parser.add_argument('--dump_dir', type=str, default=DUMP_DIR)
     parser.add_argument('--num_workers', type=int, default=0)
+    parser.add_argument('--wandb_entity', type=str, default='samokhinv')
 
     args = parser.parse_args()
     return args
@@ -60,7 +61,7 @@ def parse_arguments():
 
 def main(args):
 
-    wandb.init(project='qp-wgan', entity='samokhinv')
+    wandb.init(project='qp-wgan', entity=args.wandb_entity)
     wandb.config.update(args)
     wandb.run.name = f'{args.task}_q_{args.q}_p_{args.p}_critic_iter_{args.n_critic_iter}'
 
@@ -93,7 +94,7 @@ def main(args):
         train_dataset = datasets.MNIST(
             'data', train=True, download=True, transform=transform)
         trainloader = DataLoader(
-            train_dataset, shuffle=True, batch_size=args.batch_size, num_workers=args.num_workers)
+            train_dataset, shuffle=True, batch_size=args.batch_size, num_workers=args.num_workers, pin_memory=True)
         generator = mnist.Generator().to(device)
         # generator.init_weights()
         critic = mnist.Critic().to(device)
@@ -114,7 +115,7 @@ def main(args):
         train_dataset = datasets.CIFAR10(
             DATA_DIR, train=True, transform=transform, download=True)
         trainloader = DataLoader(
-            train_dataset, shuffle=True, batch_size=args.batch_size, num_workers=args.num_workers)
+            train_dataset, shuffle=True, batch_size=args.batch_size, num_workers=args.num_workers, pin_memory=True)
         generator = cifar10.Generator().to(device)
         critic = cifar10.Critic().to(device)
 
