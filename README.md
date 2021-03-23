@@ -1,4 +1,4 @@
-# (q,p)-Wasserstein GAN
+# (q,p)-Wasserstein GANs
 
 This repository contains Pytorch implementation of a method and experiments from the paper [(q,p)-Wasserstein GANs: Comparing Ground Metrics for Wasserstein GANs](https://arxiv.org/abs/1902.03642).
 
