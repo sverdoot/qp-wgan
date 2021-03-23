@@ -1,22 +1,28 @@
-# qp-wgan
+# (q,p)-Wasserstein GAN
+
+This repository contains Pytorch implementation of a method and experiments from the paper [(q,p)-Wasserstein GANs: Comparing Ground Metrics for Wasserstein GANs](https://arxiv.org/abs/1902.03642).
+
+### Installation
 
 ```bash
 pip install -r requirements.txt
 pip install -e .
 ```
 
+### Usage
+
 To use wandb tracking, do in advance
 ```bash
 wandb login
 ```
 
-Optimization of Wasserstein metric on discrete measure
+Optimization of Wasserstein metric on discrete measure:
 
 ```bash
 python src/discrete_measures.py
 ```
 
-Approximating a Gaussian mixture distribution
+Approximating a Gaussian mixture distribution:
 
 ```bash
 python3 src/gaussian_mixture.py  --n_epoch 601  --search_space full --n_critic_iter 2 --reg_coef1 0.1 --reg_coef2 1 --batch_size 64
@@ -28,6 +34,8 @@ MNIST
 bash bin/mnist.sh
 
 ```
+
+### Some results
 
 CIFAR10
 
