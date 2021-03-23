@@ -6,3 +6,4 @@ matplotlib
 POT
 wandb
 fid-score
+pytorch-fid

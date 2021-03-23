@@ -166,9 +166,13 @@ class QPWGAN():
                 for callback in callbacks:
                     callback(self, epoch)
 
-    def train_gaussian_mixture(self, n_epoch: int = 500):
+    def train_gaussian_mixture(self, n_epoch: int = 500, scaler=None):
         # TODO: substitute this method with existing 'train' using callbacks
         target_sample = self.trainloader.dataset.data
+        target_sample_np = target_sample.detach().cpu().numpy()
+        #target_sample_np = scaler.inverse_transform(target_sample.detach().cpu().numpy())
+
+
         gen_loss_history = []
         critic_loss_history = []
         wass_history = []
@@ -201,6 +205,7 @@ class QPWGAN():
                 _ = plt.figure()
                 sample = self.generator.sample(
                     batch_size=100, device=self.device).to('cpu').detach().numpy()
+                #sample = scaler.inverse_transform(sample)
                 kernel = stats.gaussian_kde(
                     np.unique(sample, axis=0).T)  # reshape(2, -1))
 
@@ -221,15 +226,13 @@ class QPWGAN():
 
                 plt.scatter(sample[:100, 0], sample[:100, 1],
                             color='red', s=10, label='generated')
-                target_sample = target_sample.detach().cpu().numpy()
-                plt.scatter(target_sample[:,
+                plt.scatter(target_sample_np[:,
                                           0],
-                            target_sample[:,
+                            target_sample_np[:,
                                           1],
                             color='cornflowerblue',
                             s=10,
                             label='original data', alpha=0.7)
-                target_sample = torch.Tensor(target_sample).to(self.device)
                 plt.title(f'p={self.p} iteration {iter_}')
                 plt.plot([0], [0], marker='x', markersize=10, color='black')
                 plt.legend()
@@ -240,20 +243,13 @@ class QPWGAN():
                 plt.close()
 
                 _ = plt.figure()
-                target_sample = target_sample.detach().cpu().numpy()
-                plt.scatter(target_sample[:,
+                plt.scatter(target_sample_np[:,
                                           0],
-                            target_sample[:,
+                            target_sample_np[:,
                                           1],
                             color='cornflowerblue',
                             s=10,
                             label='original data', alpha=0.7)
-                target_sample = torch.Tensor(target_sample).to(self.device)
-
-                # z = np.zeros((X.shape[0] * X.shape[1], 2))
-                # for i in range(X.shape[0]):
-                #     for j in range(X.shape[1]):
-                #         z[i * X.shape[0] + j] = np.append(X[i][j], Y[i][j])
 
                 input = torch.FloatTensor(input).to(self.device)
                 output_real = self.critic(input).detach().cpu().numpy()

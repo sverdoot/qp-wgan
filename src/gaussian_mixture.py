@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import List, Union
 import math
 from torch.utils.data import DataLoader
+from sklearn.preprocessing import StandardScaler
 
 from models.gaussian_model import Generator, Critic
 from qpwgan import QPWGAN
@@ -40,7 +41,7 @@ def parse_arguments():
     parser.add_argument('-q', type=int, default=2)
     parser.add_argument('-p', nargs='+', type=int, default=[1, 2, 5])
     parser.add_argument('--n_epoch', type=int, default=500)
-    parser.add_argument('--n_critic_iter', type=int, default=5)
+    parser.add_argument('--n_critic_iter', type=int, default=1)
     parser.add_argument('--batch_size', type=int, default=64)
     parser.add_argument('--number_of_clusters', type=int, default=None)
     parser.add_argument('--amount_of_points', type=int, default=None)
@@ -85,6 +86,8 @@ def main(args):
                                     mu_vector=mus,
                                     variance_vector=variances
                                     )
+    scaler = StandardScaler()
+    #target_sample = scaler.fit_transform(target_sample)
 
     target_dataloader = DataLoader(torch.FloatTensor(
         target_sample), shuffle=True, batch_size=args.batch_size)
@@ -116,9 +119,10 @@ def main(args):
                       reg_coef2=args.reg_coef2,
                       )
         gen_loss_history, wass_history = wgan.train_gaussian_mixture(
-            args.n_epoch)
+            args.n_epoch, scaler=None)
         sample = wgan.generator.sample(
             batch_size=100, device=device).to('cpu').detach().numpy()
+        #sample = scaler.inverse_transform(sample)
 
         fig = plt.figure()
         plt.scatter(sample[:, 0], sample[:, 1],

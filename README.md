@@ -19,7 +19,7 @@ python src/discrete_measures.py
 Approximating a Gaussian mixture distribution
 
 ```bash
-python src/gaussian_mixture.py --n_epoch 601 --search_space full
+python3 src/gaussian_mixture.py  --n_epoch 601  --search_space full --n_critic_iter 2 --reg_coef1 0.1 --reg_coef2 1 --batch_size 64
 ```
 
 MNIST
