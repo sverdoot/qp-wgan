@@ -281,4 +281,4 @@ class QPWGAN():
 
     @staticmethod
     def admissable_penalty(full_xi_vals):
-        return torch.mean(torch.clamp(full_xi_vals, min=0)**2)
+        return torch.mean(torch.clamp(full_xi_vals, max=0)**2)
